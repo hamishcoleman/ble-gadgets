@@ -1,0 +1,10 @@
+A collection of notes on reading bluetooth low energy gadgets.
+
+Importantly, definitions of the available GATT UUIDs and their contents.
+
+Getting started:
+    sudo hcitool -i hci1 lescan
+
+    sudo gatttool -i hci1 -t random -b $ADDR -I
+
+
