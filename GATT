@@ -1,0 +1,36 @@
+
+
+Well known GATT UUIDs:
+(https://www.bluetooth.com/specifications/gatt)
+
+0x2800  uuid      .gatt.primary_service_declaration
+0x2803  complex   .gatt.characteristic_declaration
+0x2901  utf8s     .gatt.characteristic_user_description
+0x2902  16bit     .gatt.client_characteristic_configuration
+0x2a00  utf8s     .gap.device_name
+0x2a01  16bit     .gap.appearance
+0x2a04  uint16[4] .gap.peripheral_preferred_connection_parameters
+0x2a05  uint16[2] .gatt.service_changed
+0x2a19  uint8     battery level
+0x2a23  40+24bit  system id
+0x2a24  utf8s     model number string
+0x2a25  utf8s     serial number string
+0x2a26  utf8s     firmware revision string
+0x2a27  utf8s     hardware revision string
+0x2a28  utf8s     software revision string
+0x2a29  utf8s     manufacturer name string
+
+
+Device specific GATT UUIDs:
+
+Sensirion SmartGadget (see https://github.com/Sensirion/SmartGadget-Firmware)
+00001235-b38d-4985-720e-0f993a68ee41 float32t     HumidityService
+00002235-b38d-4985-720e-0f993a68ee41 float32t     TemperatureService
+0000f235-b38d-4985-720e-0f993a68ee41 ?            sync time ms? (writeonly?)
+0000f236-b38d-4985-720e-0f993a68ee41 uint64?      oldest sample?
+0000f237-b38d-4985-720e-0f993a68ee41 uint64?      newest sample?
+0000f238-b38d-4985-720e-0f993a68ee41 uint8?       start logger download?
+0000f239-b38d-4985-720e-0f993a68ee41 ?            logger interval
+
+
+
