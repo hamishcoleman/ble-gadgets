@@ -20,6 +20,8 @@ def main(args):
     """ TODO:
         - args.obj_path is a temp convinience. try something like:
             /org/bluez/hci1/dev_CF_62_A8_4F_9C_E2/service0035/char0036
+        - note that this only works after bluetoothctl has configured and
+          connected to the device
     """
     bus_name="org.bluez"
     bus = dbus.SystemBus()
