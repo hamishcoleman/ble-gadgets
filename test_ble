@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+#
+# Simple test script to try and interact with BLE devices
+#
+
+import argparse
+
+import dbus
+import struct
+
+def dbus2float(array):
+    """Dbus returns us a "dbus.Array", we want the float from inside that
+    """
+    s = ''
+    for ch in array:
+        s += chr(ch)
+    return (struct.unpack('<f',s))[0]
+
+def main(args):
+    """ TODO:
+        - args.obj_path is a temp convinience. try something like:
+            /org/bluez/hci1/dev_CF_62_A8_4F_9C_E2/service0035/char0036
+    """
+    bus_name="org.bluez"
+    bus = dbus.SystemBus()
+    proxy = bus.get_object(bus_name,args.obj_path)
+    char = dbus.Interface(proxy, dbus_interface="org.bluez.GattCharacteristic1")
+    properties = char.ReadValue({'none': 0})
+    print properties
+
+    print "Temperature: {} degrees C".format(dbus2float(properties))
+
+def do_options():
+    a = argparse.ArgumentParser('Explore Blootooth Low Energy devices')
+    a.add_argument('obj_path', help='full bluez object path')
+
+    return a.parse_args()
+    
+
+if __name__ == '__main__':
+    args = do_options()
+    main(args)
