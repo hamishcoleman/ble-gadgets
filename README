@@ -1,6 +1,14 @@
 A collection of notes on reading bluetooth low energy gadgets.
 
-Importantly, definitions of the available GATT UUIDs and their contents.
+The intent is to end up with a tool that can be used to monitor a collection
+of BLE devices.  It should automatically scan, discover, connect to these
+devices and then, once connected, it should identify monitorable statistics
+(or determine that this device has nothing of interest - and blacklist it)
+and then collect those stats and output them to someplace from where they
+can be graphed or archived.
+
+An important part of allowing this to happen is a list of known GATT
+properties and their contents.
 
 Getting started:
     sudo hcitool -i hci1 lescan
