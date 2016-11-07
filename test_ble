@@ -35,24 +35,33 @@ gatt_list = {
 }
 
 
-def list_paths(proxy,interface):
+def list_paths(objects,interface):
     result = {}
-    manager = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager")
-    objects = manager.GetManagedObjects()
     for path, interfaces in objects.iteritems():
         if interface in interfaces:
             result[path] = interfaces
     return result
 
 
-def list_devices(bluez):
-    btdevices = list_paths(bluez,'org.bluez.Device1')
+def list_devices(all_objects):
+    btdevices = list_paths(all_objects,'org.bluez.Device1')
     for path, interface in btdevices.iteritems():
         val = interface['org.bluez.Device1']
         print "val: {}".format(val)
         print val['Address'],val['Name'],val['Connected']
         for uuid in val['UUIDs']:
             print "\t",uuid
+
+
+def gattchar2devicepath(all_objects, gattcharpath):
+    """Follow the pointers in the objects dictionary to find the parent
+       device, given the gatt characteristic path
+    """
+    gattchar = all_objects[gattcharpath]['org.bluez.GattCharacteristic1']
+    service_path = gattchar['Service']
+    servicechar = all_objects[service_path]['org.bluez.GattService1']
+    device_path = servicechar['Device']
+    return device_path
 
 
 def main(args):
@@ -64,32 +73,49 @@ def main(args):
     bus = dbus.SystemBus()
 
     bluez = bus.get_object(bus_name,'/')
+    all_objects = dbus.Interface(bluez, "org.freedesktop.DBus.ObjectManager").GetManagedObjects()
 
     if args.verbose:
-        list_devices(bluez)
+        list_devices(all_objects)
 
-    all_gatt = list_paths(bluez,'org.bluez.GattCharacteristic1')
+    # TODO:
+    # - if there are devices that are not connected and not ServicesResolved
+    # then we will not know their Gatt list, so connect them first..
+
+    all_gatt = list_paths(all_objects,'org.bluez.GattCharacteristic1')
     for path, interface in all_gatt.iteritems():
         gatt = interface['org.bluez.GattCharacteristic1']
+        uuid = gatt['UUID']
 
-        if gatt['UUID'] not in gatt_list:
+        if uuid not in gatt_list:
             if args.verbose>2:
                 print "Path",path
-                print " UUID",gatt['UUID']
+                print " UUID",uuid
             continue
 
         # get this value
-        entry = gatt_list[gatt['UUID']]
+        entry = gatt_list[uuid]
         print "Path",path
 
         if args.verbose>1:
-            print " UUID",gatt['UUID']
+            print " UUID",uuid
 
-        # TODO:
-        # walk up, gatt[Service] -> GattService1[Device] -> Device1
-        # - and ensure Connected
-        # walk up Device1[Adapter] -> Adaptor1
-        # - and confirm Power
+        device_path = gattchar2devicepath(all_objects, path)
+
+        # use the cached property
+        connected = all_objects[device_path]['org.bluez.Device1']['Connected']
+
+        # # alternate that doesnt use the cached property
+        # device_prop = dbus.Interface(bus.get_object(bus_name,device_path),
+        #                     dbus_interface="org.freedesktop.DBus.Properties")
+        # connected = device_prop.Get('org.bluez.Device1','Connected')
+
+        # try to ensure that this device is still connected
+        if not connected:
+            print " Connecting"
+            device = dbus.Interface(bus.get_object(bus_name,device_path),
+                        dbus_interface="org.bluez.Device1")
+            device.Connect()
 
         proxy = bus.get_object(bus_name,path)
         char = dbus.Interface(proxy,
