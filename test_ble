@@ -7,6 +7,7 @@ import argparse
 
 import dbus
 import struct
+import time
 
 def dbus2float32t(array):
     """Dbus returns us a "dbus.Array", we want the float from inside that
@@ -47,8 +48,9 @@ def list_devices(all_objects):
     btdevices = list_paths(all_objects,'org.bluez.Device1')
     for path, interface in btdevices.iteritems():
         val = interface['org.bluez.Device1']
-        print "val: {}".format(val)
-        print val['Address'],val['Name'],val['Connected']
+        print "{} {} Connected={} ServicesResolved={}".format(
+            val['Address'],val['Name'],val['Connected'],val['ServicesResolved']
+        )
         for uuid in val['UUIDs']:
             print "\t",uuid
 
@@ -63,6 +65,12 @@ def gattchar2devicepath(all_objects, gattcharpath):
     device_path = servicechar['Device']
     return device_path
 
+def get_all_objects(proxy):
+    """Get a new cache of all the managed objects and their properties
+    """
+    all_objects = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager").GetManagedObjects()
+    return all_objects
+
 
 def main(args):
     """ TODO:
@@ -73,14 +81,51 @@ def main(args):
     bus = dbus.SystemBus()
 
     bluez = bus.get_object(bus_name,'/')
-    all_objects = dbus.Interface(bluez, "org.freedesktop.DBus.ObjectManager").GetManagedObjects()
+    all_objects = get_all_objects(bluez)
+
+    # If a device is already connected, we probably already have
+    # the services.  If it is not connected, bluez might have a cached
+    # copy of the services.  If neither applies, connect to the
+    # device (which I believe will trigger a service resolve)
+    all_devices = list_paths(all_objects,'org.bluez.Device1')
+    device_connect = 0
+    device_list = []
+    for path, interface in all_devices.iteritems():
+        prop = interface['org.bluez.Device1']
+        if not prop['Connected'] and not prop['ServicesResolved']:
+            print "Connecting", path
+            device = dbus.Interface(bus.get_object(bus_name,path),
+                        dbus_interface="org.bluez.Device1")
+
+            try:
+                device.Connect()
+            except dbus.exceptions.DBusException as e:
+                print "Error: {}".format(e)
+            else:
+                device_connect = 1
+                device_list.append(path)
+
+    # if we needed a connect, then we need to loop waiting for services
+    while device_list:
+        time.sleep(1)
+        all_objects = get_all_objects(bluez)
+        new_device_list = []
+        for device in device_list:
+            device_prop = dbus.Interface(bus.get_object(bus_name,device),
+                            dbus_interface="org.freedesktop.DBus.Properties")
+            servicesresolved = device_prop.Get('org.bluez.Device1','ServicesResolved')
+            if not servicesresolved:
+                print "Waiting for ServicesResolved from", path
+                new_device_list.append(device)
+        device_list = new_device_list
+
+    # only need to refresh the whole list if we changed something
+    if device_connect:
+        all_objects = get_all_objects(bluez)
 
     if args.verbose:
         list_devices(all_objects)
-
-    # TODO:
-    # - if there are devices that are not connected and not ServicesResolved
-    # then we will not know their Gatt list, so connect them first..
+        print
 
     all_gatt = list_paths(all_objects,'org.bluez.GattCharacteristic1')
     for path, interface in all_gatt.iteritems():
@@ -111,18 +156,26 @@ def main(args):
         # connected = device_prop.Get('org.bluez.Device1','Connected')
 
         # try to ensure that this device is still connected
+        skipping=0
         if not connected:
             print " Connecting"
             device = dbus.Interface(bus.get_object(bus_name,device_path),
                         dbus_interface="org.bluez.Device1")
-            device.Connect()
+            try:
+                device.Connect()
+            except dbus.exceptions.DBusException as e:
+                print "Error: {}".format(e)
+                skipping=1
 
-        proxy = bus.get_object(bus_name,path)
-        char = dbus.Interface(proxy,
-                                dbus_interface="org.bluez.GattCharacteristic1")
-        value = char.ReadValue({'none': 0})
-        value = entry['func'](value)
-        print "  ",entry['desc'],value
+        if skipping:
+            print "  \N"
+        else:
+            proxy = bus.get_object(bus_name,path)
+            char = dbus.Interface(proxy,
+                                    dbus_interface="org.bluez.GattCharacteristic1")
+            value = char.ReadValue({'none': 0})
+            value = entry['func'](value)
+            print "  ",entry['desc'],value
 
 
 def do_options():
