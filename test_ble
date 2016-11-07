@@ -47,11 +47,16 @@ def list_paths(objects,interface):
 def list_devices(all_objects):
     btdevices = list_paths(all_objects,'org.bluez.Device1')
     for path, interface in btdevices.iteritems():
-        val = interface['org.bluez.Device1']
+        props = interface['org.bluez.Device1']
+        address = props['Address']
+        if 'Name' in props:
+            name = props['Name']
+        else:
+            name = "\N"
         print "{} {} Connected={} ServicesResolved={}".format(
-            val['Address'],val['Name'],val['Connected'],val['ServicesResolved']
+            address, name, props['Connected'],props['ServicesResolved']
         )
-        for uuid in val['UUIDs']:
+        for uuid in props['UUIDs']:
             print "\t",uuid
 
 
