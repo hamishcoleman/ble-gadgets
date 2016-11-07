@@ -16,6 +16,15 @@ def dbus2float(array):
         s += chr(ch)
     return (struct.unpack('<f',s))[0]
 
+def list_paths(proxy,interface):
+    result = []
+    manager = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager")
+    objects = manager.GetManagedObjects()
+    for path, interfaces in objects.iteritems():
+        if interface in interfaces:
+            result.append(path)
+    return result
+
 def main(args):
     """ TODO:
         - args.obj_path is a temp convinience. try something like:
@@ -25,6 +34,10 @@ def main(args):
     """
     bus_name="org.bluez"
     bus = dbus.SystemBus()
+
+    btadaptors = list_paths(bus.get_object(bus_name,'/'),'org.bluez.Adapter1')
+    print "btadaptors: {}".format(btadaptors)
+
     proxy = bus.get_object(bus_name,args.obj_path)
     char = dbus.Interface(proxy, dbus_interface="org.bluez.GattCharacteristic1")
     properties = char.ReadValue({'none': 0})
