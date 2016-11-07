@@ -8,7 +8,7 @@ import argparse
 import dbus
 import struct
 
-def dbus2float(array):
+def dbus2float32t(array):
     """Dbus returns us a "dbus.Array", we want the float from inside that
     """
     s = ''
@@ -16,41 +16,95 @@ def dbus2float(array):
         s += chr(ch)
     return (struct.unpack('<f',s))[0]
 
+def dbus2uint8t(array):
+    return int(array[0])
+
+gatt_list = {
+    '00002a19-0000-1000-8000-00805f9b34fb': {
+        'func': dbus2uint8t,
+        'desc': 'Battery',
+    },
+    '00002235-b38d-4985-720e-0f993a68ee41': {
+        'func': dbus2float32t,
+        'desc': 'Temperature',
+    },
+    '00001235-b38d-4985-720e-0f993a68ee41': {
+        'func': dbus2float32t,
+        'desc': 'Humidity',
+    },
+}
+
+
 def list_paths(proxy,interface):
-    result = []
+    result = {}
     manager = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager")
     objects = manager.GetManagedObjects()
     for path, interfaces in objects.iteritems():
         if interface in interfaces:
-            result.append(path)
+            result[path] = interfaces
     return result
+
+
+def list_devices(bluez):
+    btdevices = list_paths(bluez,'org.bluez.Device1')
+    for path, interface in btdevices.iteritems():
+        val = interface['org.bluez.Device1']
+        print "val: {}".format(val)
+        print val['Address'],val['Name'],val['Connected']
+        for uuid in val['UUIDs']:
+            print "\t",uuid
+
 
 def main(args):
     """ TODO:
-        - args.obj_path is a temp convinience. try something like:
-            /org/bluez/hci1/dev_CF_62_A8_4F_9C_E2/service0035/char0036
         - note that this only works after bluetoothctl has configured and
           connected to the device
     """
     bus_name="org.bluez"
     bus = dbus.SystemBus()
 
-    btadaptors = list_paths(bus.get_object(bus_name,'/'),'org.bluez.Adapter1')
-    print "btadaptors: {}".format(btadaptors)
+    bluez = bus.get_object(bus_name,'/')
 
-    proxy = bus.get_object(bus_name,args.obj_path)
-    char = dbus.Interface(proxy, dbus_interface="org.bluez.GattCharacteristic1")
-    properties = char.ReadValue({'none': 0})
-    print properties
+    if args.verbose:
+        list_devices(bluez)
 
-    print "Temperature: {} degrees C".format(dbus2float(properties))
+    all_gatt = list_paths(bluez,'org.bluez.GattCharacteristic1')
+    for path, interface in all_gatt.iteritems():
+        gatt = interface['org.bluez.GattCharacteristic1']
+
+        if gatt['UUID'] not in gatt_list:
+            if args.verbose>2:
+                print "Path",path
+                print " UUID",gatt['UUID']
+            continue
+
+        # get this value
+        entry = gatt_list[gatt['UUID']]
+        print "Path",path
+
+        if args.verbose>1:
+            print " UUID",gatt['UUID']
+
+        # TODO:
+        # walk up, gatt[Service] -> GattService1[Device] -> Device1
+        # - and ensure Connected
+        # walk up Device1[Adapter] -> Adaptor1
+        # - and confirm Power
+
+        proxy = bus.get_object(bus_name,path)
+        char = dbus.Interface(proxy,
+                                dbus_interface="org.bluez.GattCharacteristic1")
+        value = char.ReadValue({'none': 0})
+        value = entry['func'](value)
+        print "  ",entry['desc'],value
+
 
 def do_options():
     a = argparse.ArgumentParser('Explore Blootooth Low Energy devices')
-    a.add_argument('obj_path', help='full bluez object path')
+    a.add_argument('-v','--verbose', action='count', default=0)
 
     return a.parse_args()
-    
+
 
 if __name__ == '__main__':
     args = do_options()
