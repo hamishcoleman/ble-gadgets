@@ -154,9 +154,13 @@ def list_devices(bus,all_objects):
             print "\t",uuid
 
 
-def get_all_objects(proxy):
+def get_all_objects(bus):
     """Get a new cache of all the managed objects and their properties
     """
+
+    # TODO: do we care that this hardcodes the destination on what is
+    # a generic call?
+    proxy = bus.get_object('org.bluez','/')
     all_objects = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager").GetManagedObjects()
     return all_objects
 
@@ -166,11 +170,9 @@ def main(args):
         - note that this only works after bluetoothctl has configured and
           connected to the device
     """
-    bus_name="org.bluez"
     bus = dbus.SystemBus()
 
-    bluez = bus.get_object(bus_name,'/')
-    all_objects = get_all_objects(bluez)
+    all_objects = get_all_objects(bus)
 
     # If a device is already connected, we probably already have
     # the services.  If it is not connected, bluez might have a cached
@@ -191,7 +193,7 @@ def main(args):
     # if we needed a connect, then we need to loop waiting for services
     while device_list:
         time.sleep(1)
-        all_objects = get_all_objects(bluez)
+        all_objects = get_all_objects(bus)
         new_device_list = []
         for device in device_list:
             if not device.servicesresolved():
@@ -201,7 +203,7 @@ def main(args):
 
     # only need to refresh the whole list if we changed something
     if device_connect:
-        all_objects = get_all_objects(bluez)
+        all_objects = get_all_objects(bus)
 
     if args.verbose:
         list_devices(bus,all_objects)
