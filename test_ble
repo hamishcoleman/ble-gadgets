@@ -233,35 +233,50 @@ def main(args):
         list_devices(bus,prop)
         print
 
+    tree = {}
+
+    # first, create a hit list of all the characteristics we want
     all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
     for path in all_gatt:
         object = Characteristic(bus,prop,path)
 
-        if not object.known:
-            if args.verbose>2:
-                print "Path",object.path
-                print " UUID",object.uuid
-            continue
-
-        # get this value
-        print "Path",object.path
-
-        if args.verbose>1:
+        if args.verbose>2:
+            print "Found",object.path
             print " UUID",object.uuid
 
-        device = object.device(bus)
+        if not object.known:
+            continue
 
-        connected = device.connected()
+        device = object.device(bus)
+        if device.path not in tree:
+            tree[device.path] = {}
+
+        tree[device.path][object.path] = object
+
+    # confirm that all the devices are connected
+    for device_path in tree:
+        device = Device(bus,prop,device_path)
 
         # try to ensure that this device is still connected
-        if not connected:
-            print " Connecting"
-            connected = device.Connect()
+        if not device.connected():
+            print " Connecting", device.path
+            if not device.Connect():
+                # we failed the connection, delete this device
+                print "  Failed"
+                tree.pop(device.path)
 
-        if connected:
+    # finally, walk the tree
+    for device_path,chars in tree.iteritems():
+        device = Device(bus,prop,device_path)
+        print "Device",device.address
+        for char_path, object in chars.iteritems():
+            if args.verbose:
+                print " Path",object.path
+
+            if args.verbose>1:
+                print " UUID",object.uuid
+
             print "  {} = {}".format(object.desc(),object.read())
-        else:
-            print "  \N"
 
 
 def do_options():
