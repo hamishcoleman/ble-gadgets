@@ -20,7 +20,14 @@ def dbus2float32t(array):
 def dbus2uint8t(array):
     return int(array[0])
 
+def dbus2unknown(object):
+    return object
+
 gatt_list = {
+    'unknown': {
+        'func': dbus2unknown,
+        'desc': 'Unknown',
+    },
     '00002a19-0000-1000-8000-00805f9b34fb': {
         'func': dbus2uint8t,
         'desc': 'Battery',
@@ -34,6 +41,35 @@ gatt_list = {
         'desc': 'Humidity',
     },
 }
+
+
+class Characteristic:
+    def __init__(self, bus, path):
+        self.bus = bus
+        self.path = path
+
+        proxy = self.bus.get_object('org.bluez',path)
+
+        self.char = dbus.Interface(proxy,
+                              dbus_interface="org.bluez.GattCharacteristic1")
+        self.prop = dbus.Interface(proxy,
+                              dbus_interface="org.freedesktop.DBus.Properties")
+
+        self.uuid = self.prop.Get('org.bluez.GattCharacteristic1','UUID')
+
+        if self.uuid in gatt_list:
+            self.entry = gatt_list[self.uuid]
+            self.known = 1
+        else:
+            self.entry = gatt_list['unknown']
+            self.known = 0
+
+    def desc(self):
+        return self.entry['desc']
+
+    def read(self):
+        value = self.char.ReadValue({'none': 0})
+        return self.entry['func'](value)
 
 
 def list_paths(objects,interface):
@@ -134,31 +170,24 @@ def main(args):
 
     all_gatt = list_paths(all_objects,'org.bluez.GattCharacteristic1')
     for path, interface in all_gatt.iteritems():
-        gatt = interface['org.bluez.GattCharacteristic1']
-        uuid = gatt['UUID']
+        object = Characteristic(bus,path)
 
-        if uuid not in gatt_list:
+        if not object.known:
             if args.verbose>2:
-                print "Path",path
-                print " UUID",uuid
+                print "Path",object.path
+                print " UUID",object.uuid
             continue
 
         # get this value
-        entry = gatt_list[uuid]
-        print "Path",path
+        print "Path",object.path
 
         if args.verbose>1:
-            print " UUID",uuid
+            print " UUID",object.uuid
 
-        device_path = gattchar2devicepath(all_objects, path)
+        device_path = gattchar2devicepath(all_objects, object.path)
 
         # use the cached property
         connected = all_objects[device_path]['org.bluez.Device1']['Connected']
-
-        # # alternate that doesnt use the cached property
-        # device_prop = dbus.Interface(bus.get_object(bus_name,device_path),
-        #                     dbus_interface="org.freedesktop.DBus.Properties")
-        # connected = device_prop.Get('org.bluez.Device1','Connected')
 
         # try to ensure that this device is still connected
         skipping=0
@@ -175,12 +204,7 @@ def main(args):
         if skipping:
             print "  \N"
         else:
-            proxy = bus.get_object(bus_name,path)
-            char = dbus.Interface(proxy,
-                                    dbus_interface="org.bluez.GattCharacteristic1")
-            value = char.ReadValue({'none': 0})
-            value = entry['func'](value)
-            print "  ",entry['desc'],value
+            print "  {} = {}".format(object.desc(),object.read())
 
 
 def do_options():
