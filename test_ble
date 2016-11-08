@@ -111,7 +111,7 @@ class Device:
                               dbus_interface="org.freedesktop.DBus.Properties")
 
         self.address = self.prop.Get('org.bluez.Device1','Address')
-        self.name = self.prop.Get('org.bluez.Device1','Name')
+        self.name = self.prop.Get('org.bluez.Device1','Alias')
         self.uuids = self.prop.Get('org.bluez.Device1','UUIDs')
 
     def connected(self):
