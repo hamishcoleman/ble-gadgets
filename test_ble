@@ -44,11 +44,17 @@ gatt_list = {
 
 
 class Characteristic:
+    """Representing a GATT characteristic
+    """
+
     def __init__(self, bus, path):
-        self.bus = bus
+        # FIXME - there should only be one instance for any path, we should
+        # keep a class dictionary and return refs to existing objects
+        # if found
+
         self.path = path
 
-        proxy = self.bus.get_object('org.bluez',path)
+        proxy = bus.get_object('org.bluez',path)
 
         self.char = dbus.Interface(proxy,
                               dbus_interface="org.bluez.GattCharacteristic1")
@@ -71,6 +77,58 @@ class Characteristic:
         value = self.char.ReadValue({'none': 0})
         return self.entry['func'](value)
 
+    def device_path(self,bus):
+        """Follow the pointers in the objects to find the parent device
+        """
+        service_path = self.prop.Get('org.bluez.GattCharacteristic1','Service')
+
+        proxy = bus.get_object('org.bluez',service_path)
+        service_prop = dbus.Interface(proxy,
+                              dbus_interface="org.freedesktop.DBus.Properties")
+        device_path = service_prop.Get('org.bluez.GattService1','Device')
+        return device_path
+
+    def device(self,bus):
+        return Device(bus,self.device_path(bus))
+
+
+class Device:
+    """Representing a bluetooth device
+    """
+
+    def __init__(self, bus, path):
+        # FIXME - there should only be one instance for any path, we should
+        # keep a class dictionary and return refs to existing objects
+        # if found
+
+        self.path = path
+
+        proxy = bus.get_object('org.bluez',path)
+
+        self.dev = dbus.Interface(proxy,
+                              dbus_interface="org.bluez.Device1")
+        self.prop = dbus.Interface(proxy,
+                              dbus_interface="org.freedesktop.DBus.Properties")
+
+        self.address = self.prop.Get('org.bluez.Device1','Address')
+        self.name = self.prop.Get('org.bluez.Device1','Name')
+        self.uuids = self.prop.Get('org.bluez.Device1','UUIDs')
+
+    def connected(self):
+        return self.prop.Get('org.bluez.Device1','Connected')
+
+    def servicesresolved(self):
+        return self.prop.Get('org.bluez.Device1','ServicesResolved')
+
+    def Connect(self):
+        try:
+            self.dev.Connect()
+        except dbus.exceptions.DBusException as e:
+            print "Error: {}".format(e)
+            return None
+        else:
+            return 1
+
 
 def list_paths(objects,interface):
     result = {}
@@ -80,31 +138,21 @@ def list_paths(objects,interface):
     return result
 
 
-def list_devices(all_objects):
+def list_devices(bus,all_objects):
     btdevices = list_paths(all_objects,'org.bluez.Device1')
     for path, interface in btdevices.iteritems():
-        props = interface['org.bluez.Device1']
-        address = props['Address']
-        if 'Name' in props:
-            name = props['Name']
+        device = Device(bus,path)
+
+        if device.name is not None:
+            name = device.name
         else:
             name = "\N"
         print "{} {} Connected={} ServicesResolved={}".format(
-            address, name, props['Connected'],props['ServicesResolved']
+            device.address, name, device.connected(),device.servicesresolved()
         )
-        for uuid in props['UUIDs']:
+        for uuid in device.uuids:
             print "\t",uuid
 
-
-def gattchar2devicepath(all_objects, gattcharpath):
-    """Follow the pointers in the objects dictionary to find the parent
-       device, given the gatt characteristic path
-    """
-    gattchar = all_objects[gattcharpath]['org.bluez.GattCharacteristic1']
-    service_path = gattchar['Service']
-    servicechar = all_objects[service_path]['org.bluez.GattService1']
-    device_path = servicechar['Device']
-    return device_path
 
 def get_all_objects(proxy):
     """Get a new cache of all the managed objects and their properties
@@ -132,19 +180,13 @@ def main(args):
     device_connect = 0
     device_list = []
     for path, interface in all_devices.iteritems():
-        prop = interface['org.bluez.Device1']
-        if not prop['Connected'] and not prop['ServicesResolved']:
+        device = Device(bus,path)
+        if not device.connected() and not device.servicesresolved():
             print "Connecting", path
-            device = dbus.Interface(bus.get_object(bus_name,path),
-                        dbus_interface="org.bluez.Device1")
-
-            try:
-                device.Connect()
-            except dbus.exceptions.DBusException as e:
-                print "Error: {}".format(e)
-            else:
+            connected = device.Connect()
+            if connected:
                 device_connect = 1
-                device_list.append(path)
+                device_list.append(device)
 
     # if we needed a connect, then we need to loop waiting for services
     while device_list:
@@ -152,11 +194,8 @@ def main(args):
         all_objects = get_all_objects(bluez)
         new_device_list = []
         for device in device_list:
-            device_prop = dbus.Interface(bus.get_object(bus_name,device),
-                            dbus_interface="org.freedesktop.DBus.Properties")
-            servicesresolved = device_prop.Get('org.bluez.Device1','ServicesResolved')
-            if not servicesresolved:
-                print "Waiting for ServicesResolved from", path
+            if not device.servicesresolved():
+                print "Waiting for ServicesResolved from", device.path
                 new_device_list.append(device)
         device_list = new_device_list
 
@@ -165,7 +204,7 @@ def main(args):
         all_objects = get_all_objects(bluez)
 
     if args.verbose:
-        list_devices(all_objects)
+        list_devices(bus,all_objects)
         print
 
     all_gatt = list_paths(all_objects,'org.bluez.GattCharacteristic1')
@@ -184,27 +223,19 @@ def main(args):
         if args.verbose>1:
             print " UUID",object.uuid
 
-        device_path = gattchar2devicepath(all_objects, object.path)
+        device = object.device(bus)
 
-        # use the cached property
-        connected = all_objects[device_path]['org.bluez.Device1']['Connected']
+        connected = device.connected()
 
         # try to ensure that this device is still connected
-        skipping=0
         if not connected:
             print " Connecting"
-            device = dbus.Interface(bus.get_object(bus_name,device_path),
-                        dbus_interface="org.bluez.Device1")
-            try:
-                device.Connect()
-            except dbus.exceptions.DBusException as e:
-                print "Error: {}".format(e)
-                skipping=1
+            connected = device.Connect()
 
-        if skipping:
-            print "  \N"
-        else:
+        if connected:
             print "  {} = {}".format(object.desc(),object.read())
+        else:
+            print "  \N"
 
 
 def do_options():
