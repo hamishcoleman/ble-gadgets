@@ -118,6 +118,7 @@ class Device:
         self.address = self.prop.Get(self.path,'org.bluez.Device1','Address')
         self.name = self.prop.Get(self.path,'org.bluez.Device1','Alias')
         self.uuids = self.prop.Get(self.path,'org.bluez.Device1','UUIDs')
+        self.appearance = self.prop.Get(self.path,'org.bluez.Device1','Appearance')
 
     def connected(self):
         return self.prop.Get(self.path,'org.bluez.Device1','Connected')
@@ -196,11 +197,15 @@ def list_devices(bus,prop):
             name = device.name
         else:
             name = "\N"
-        print "{} {} Connected={} ServicesResolved={}".format(
-            device.address, name, device.connected(),device.servicesresolved()
+        print "{} {}\n  Connected={} ServicesResolved={} Appearance={}".format(
+            device.address,
+            name,
+            device.connected(),
+            device.servicesresolved(),
+            device.appearance
         )
         for uuid in device.uuids:
-            print "\t",uuid
+            print "  {}".format(uuid)
 
 
 def main(args):
