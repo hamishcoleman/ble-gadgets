@@ -239,8 +239,13 @@ def main(args):
             new_device_list.append(device)
     device_list = new_device_list
 
-    # for each device that seemed to connect, wait for its services
-    while device_list:
+    # TODO:
+    # - if all of the devices we wanted to connect to failed, we might
+    # want to power on/off the device
+
+    # for each device that seemed to connect, wait a bit for their services
+    wait_end = time.time() + 10
+    while device_list and time.time()<wait_end:
         time.sleep(1)
         prop.invalidate()
         new_device_list = []
