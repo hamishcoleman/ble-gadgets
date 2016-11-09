@@ -270,8 +270,10 @@ def main(args):
 
         tree[device.path][object.path] = object
 
+    # since we might change the tree, we need to iterate over a snapshot here
+    device_paths = tree.keys()
     # confirm that all the devices are connected
-    for device_path in tree:
+    for device_path in device_paths:
         device = Device(bus,prop,device_path)
 
         # try to ensure that this device is still connected
