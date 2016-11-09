@@ -168,6 +168,12 @@ class PropertyCache:
 
     def Get(self,path,interface,property):
         self._validate()
+        if path not in self.all_objects:
+            return None
+        if interface not in self.all_objects[path]:
+            return None
+        if property not in self.all_objects[path][interface]
+            return None
         return self.all_objects[path][interface][property]
 
     def interface2paths(self,interface):
