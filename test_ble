@@ -20,8 +20,16 @@ def dbus2float32t(array):
 def dbus2uint8t(array):
     return int(array[0])
 
-def dbus2unknown(object):
-    return object
+def dbus2unknown(array):
+    s = ''
+    h = ''
+    for ch in array:
+        if ch in range(0x20,0x7e):
+            s += chr(ch)
+        else:
+            s += ' '
+        h += hex(ch) + ','
+    return h+' '+s
 
 gatt_list = {
     'unknown': {
@@ -73,7 +81,10 @@ class Characteristic:
         return self.entry['desc']
 
     def read(self):
-        value = self.char.ReadValue({'none': 0})
+        try:
+            value = self.char.ReadValue({'none': 0})
+        except dbus.exceptions.DBusException:
+            return None
         return self.entry['func'](value)
 
     def device_path(self):
