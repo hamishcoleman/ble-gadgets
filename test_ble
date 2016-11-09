@@ -172,7 +172,7 @@ class PropertyCache:
             return None
         if interface not in self.all_objects[path]:
             return None
-        if property not in self.all_objects[path][interface]
+        if property not in self.all_objects[path][interface]:
             return None
         return self.all_objects[path][interface][property]
 
