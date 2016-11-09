@@ -99,16 +99,17 @@ class Characteristic:
 
         if self.uuid in gatt_list:
             self.entry = gatt_list[self.uuid]
-            self.known = 1
+            self.known = True
         else:
             self.entry = {
                 'func': dbus2hexdump,
                 'desc': 'UUID:'+self.uuid,
+                'category': 'unknown',
             }
-            self.known = 0
+            self.known = False
 
-    def desc(self):
-        return self.entry['desc']
+        self.desc = self.entry['desc']
+        self.category = self.entry['category']
 
     def read(self):
         try:
@@ -306,7 +307,15 @@ def main(args):
             print "Found",object.path
             print " UUID",object.uuid
 
-        if not object.known and not args.fetchall:
+        want = False
+        if object.category in args.category:
+            want = True
+        if object.known and 'all' in args.category:
+            want = True
+        if args.fetchall:
+            want = True
+
+        if not want:
             continue
 
         device = object.device(bus)
@@ -338,15 +347,23 @@ def main(args):
                 print " Path",object.path
                 print " UUID",object.uuid
 
-            print "  {} = {}".format(object.desc(),object.read())
+            print "  {} = {}".format(object.desc,object.read())
 
 
 def do_options():
     a = argparse.ArgumentParser('Explore Blootooth Low Energy devices')
     a.add_argument('-v','--verbose', action='count', default=0)
-    a.add_argument('--fetchall', default=0)
+    a.add_argument('--fetchall', default=False,
+        action="store_true", help="Fetch all characteristics")
+    a.add_argument('--category',
+        action="append", help="Add a category of characteristics to fetch")
 
-    return a.parse_args()
+    args = a.parse_args()
+
+    if args.category is None:
+        args.category = ('normal')
+
+    return args
 
 
 if __name__ == '__main__':
