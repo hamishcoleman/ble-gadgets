@@ -23,7 +23,7 @@ def dbus2uint8t(array):
     else:
         return None
 
-def dbus2unknown(array):
+def dbus2hexdump(array):
     s = ''
     h = ''
     for ch in array:
@@ -35,10 +35,6 @@ def dbus2unknown(array):
     return h+' '+s
 
 gatt_list = {
-    'unknown': {
-        'func': dbus2unknown,
-        'desc': 'Unknown',
-    },
     '00002a19-0000-1000-8000-00805f9b34fb': {
         'func': dbus2uint8t,
         'desc': 'Battery',
@@ -77,7 +73,10 @@ class Characteristic:
             self.entry = gatt_list[self.uuid]
             self.known = 1
         else:
-            self.entry = gatt_list['unknown']
+            self.entry = {
+                'func': dbus2hexdump,
+                'desc': 'UUID:'+self.uuid,
+            }
             self.known = 0
 
     def desc(self):
