@@ -129,7 +129,7 @@ class Device:
         try:
             self.dev.Connect()
         except dbus.exceptions.DBusException as e:
-            print "Error: {}".format(e)
+            print " Error: {}".format(e)
             return None
         else:
             self.prop.invalidate()
@@ -281,10 +281,8 @@ def main(args):
         device = Device(bus,prop,device_path)
         print "Device",device.address
         for char_path, object in chars.iteritems():
-            if args.verbose:
-                print " Path",object.path
-
             if args.verbose>1:
+                print " Path",object.path
                 print " UUID",object.uuid
 
             print "  {} = {}".format(object.desc(),object.read())
