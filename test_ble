@@ -18,7 +18,10 @@ def dbus2float32t(array):
     return (struct.unpack('<f',s))[0]
 
 def dbus2uint8t(array):
-    return int(array[0])
+    if array:
+        return int(array[0])
+    else:
+        return None
 
 def dbus2unknown(array):
     s = ''
