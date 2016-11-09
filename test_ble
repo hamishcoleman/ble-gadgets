@@ -197,13 +197,18 @@ def list_devices(bus,prop):
             name = device.name
         else:
             name = "\N"
-        print "{} {}\n  Connected={} ServicesResolved={} Appearance={}".format(
-            device.address,
-            name,
+
+        # TODO
+        # - name can contain unicode, and is correctly typed as a unicode
+        # string, but running format() with a unicode param fails with
+        # a codec error..
+        print device.address, name
+        print "  Connected={} ServicesResolved={} Appearance={}".format(
             device.connected(),
             device.servicesresolved(),
             device.appearance
         )
+
         for uuid in device.uuids:
             print "  {}".format(uuid)
 
