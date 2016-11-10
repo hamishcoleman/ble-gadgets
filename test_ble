@@ -260,8 +260,9 @@ def list_devices(bus,prop):
 
 def main(args):
     """ TODO:
-        - note that this only works after bluetoothctl has configured and
-          connected to the device
+        - different output representations (the current one and a logger)
+        - add a loop, repeatedly fetching
+        - stable output order (important in loop+logger case)
     """
     bus = dbus.SystemBus()
 
@@ -273,6 +274,10 @@ def main(args):
     # device (which I believe will trigger a service resolve)
     devices = prop.interface2paths('org.bluez.Device1')
     device_list = []
+
+    # TODO:
+    # - if the device is reachable via two different hci interfaces, we
+    # only need one path to work.  Come up with a plan for this
 
     # first, build the list of devices we need to hit
     for path in devices:
@@ -291,7 +296,7 @@ def main(args):
 
     # TODO:
     # - if all of the devices we wanted to connect to failed, we might
-    # want to power on/off the device
+    # want to power on/off the hci interface
 
     # for each device that seemed to connect, wait a bit for their services
     wait_end = time.time() + 10
