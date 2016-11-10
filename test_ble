@@ -21,6 +21,10 @@ def dbus2float32t(array):
     s = dbus2string(array)
     return (struct.unpack('<f',s))[0]
 
+def dbus2uint32t(array):
+    s = dbus2string(array)
+    return (struct.unpack('<I',s))[0]
+
 def dbus2uint8t(array):
     if array:
         return int(array[0])
@@ -45,11 +49,9 @@ def dbus2hexdump(array):
     return h+' '+s
 
 gatt_list = {
-    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': dbus2float32t,
-        'desc': 'Humidity', 'category': 'normal',
-    },
-    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': dbus2float32t,
-        'desc': 'Temperature', 'category': 'normal',
+    # Standard things
+    '00002a00-0000-1000-8000-00805f9b34fb': { 'func': dbus2string,
+        'desc': 'device_name', 'category': 'string',
     },
     '00002a19-0000-1000-8000-00805f9b34fb': { 'func': dbus2uint8t,
         'desc': 'Battery', 'category': 'normal',
@@ -74,6 +76,17 @@ gatt_list = {
     },
     '00002a29-0000-1000-8000-00805f9b34fb': { 'func': dbus2string,
         'desc': 'manufacturer_name', 'category': 'string',
+    },
+
+    # Sensirion SmartGadget
+    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': dbus2float32t,
+        'desc': 'Humidity', 'category': 'normal',
+    },
+    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': dbus2float32t,
+        'desc': 'Temperature', 'category': 'normal',
+    },
+    '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': dbus2uint32t,
+        'desc': 'logger_interval', 'category': 'misc',
     },
 }
 
