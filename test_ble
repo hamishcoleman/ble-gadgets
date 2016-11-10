@@ -128,6 +128,7 @@ class Characteristic:
         try:
             value = self.char.ReadValue({'none': 0})
         except dbus.exceptions.DBusException:
+            self.prop.invalidate()
             return None
         return self.entry['func'](value)
 
@@ -171,13 +172,13 @@ class Device:
         return self.prop.Get(self.path,'org.bluez.Device1','ServicesResolved')
 
     def Connect(self):
+        self.prop.invalidate()
         try:
             self.dev.Connect()
         except dbus.exceptions.DBusException as e:
             print " Error: {}".format(e)
             return None
         else:
-            self.prop.invalidate()
             return 1
 
 
