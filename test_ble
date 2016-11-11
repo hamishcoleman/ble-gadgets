@@ -261,63 +261,53 @@ def list_devices(bus,prop):
             print "  {}".format(uuid)
 
 
-def main(args):
-    """ TODO:
-        - different output representations (the current one and a logger)
-        - add a loop, repeatedly fetching
-        - stable output order (important in loop+logger case)
-    """
-    bus = dbus.SystemBus()
-
-    prop = PropertyCache(bus)
-
-    # If a device is already connected, we probably already have
-    # the services.  If it is not connected, bluez might have a cached
-    # copy of the services.  If neither applies, connect to the
-    # device (which I believe will trigger a service resolve)
+def phase_find_new_devices(bus,prop):
     devices = prop.interface2paths('org.bluez.Device1')
     device_list = []
+
+    # New devices are ones that are not connected.  We want to see the
+    # services, so we only care about ones that dont have their services
+    # resolved
 
     # TODO:
     # - if the device is reachable via two different hci interfaces, we
     # only need one path to work.  Come up with a plan for this
 
-    # first, build the list of devices we need to hit
+    # build the list of devices we need to hit
     for path in devices:
         device = Device(bus,prop,path)
         if not device.connected() and not device.servicesresolved():
             device_list.append(device)
+    return device_list
 
+
+def phase_connect_new_devices(devices):
     # then try to connect to them (and thus invalidate their properties)
     new_device_list = []
-    for device in device_list:
+    for device in devices:
         print "Connecting", device.path
         connected = device.Connect()
         if connected:
             new_device_list.append(device)
-    device_list = new_device_list
+    return new_device_list
 
-    # TODO:
-    # - if all of the devices we wanted to connect to failed, we might
-    # want to power on/off the hci interface
 
+def phase_wait_for_servicesresolved(prop,devices):
     # for each device that seemed to connect, wait a bit for their services
     wait_end = time.time() + 10
-    while device_list and time.time()<wait_end:
+    while devices and time.time()<wait_end:
         time.sleep(1)
         prop.invalidate()
         new_device_list = []
-        for device in device_list:
+        for device in devices:
             if not device.servicesresolved():
                 print "Waiting for ServicesResolved from", device.path
                 new_device_list.append(device)
-        device_list = new_device_list
+        devices = new_device_list
         print
 
-    if args.verbose:
-        list_devices(bus,prop)
-        print
 
+def phase_characteristics_list(args,bus,prop):
     tree = {}
 
     # first, create a hit list of all the characteristics we want
@@ -340,12 +330,18 @@ def main(args):
         if not want:
             continue
 
+        # TODO:
+        # - if the hci interface is powered down, skip this characteristic
+
         device = object.device(bus)
         if device.path not in tree:
             tree[device.path] = {}
 
         tree[device.path][object.path] = object
+    return tree
 
+
+def phase_connect_devices(bus,prop,tree):
     # since we might change the tree, we need to iterate over a snapshot here
     device_paths = tree.keys()
     # confirm that all the devices are connected
@@ -360,6 +356,8 @@ def main(args):
                 print "  Failed"
                 tree.pop(device.path)
 
+
+def phase_fetch(bus,prop,tree):
     # finally, walk the tree
     for device_path,chars in tree.iteritems():
         device = Device(bus,prop,device_path)
@@ -371,6 +369,36 @@ def main(args):
 
             print "  {} = {}".format(object.desc,object.read())
 
+
+def main(args):
+    """ TODO:
+        - different output representations (the current one and a logger)
+        - add a loop, repeatedly fetching
+        - stable output order (important in loop+logger case)
+    """
+    bus = dbus.SystemBus()
+
+    prop = PropertyCache(bus)
+
+    device_list = phase_find_new_devices(bus,prop)
+
+    device_list = phase_connect_new_devices(device_list)
+
+    # TODO:
+    # - if all of the devices we wanted to connect to failed, we might
+    # want to power on/off the hci interface (and try again?)
+
+    phase_wait_for_servicesresolved(prop,device_list)
+
+    if args.verbose:
+        list_devices(bus,prop)
+        print
+
+    tree = phase_characteristics_list(args,bus,prop)
+
+    phase_connect_devices(bus,prop,tree)
+
+    phase_fetch(bus,prop,tree)
 
 def do_options():
     a = argparse.ArgumentParser('Explore Blootooth Low Energy devices')
