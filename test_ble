@@ -123,12 +123,14 @@ class Characteristic:
 
         self.desc = self.entry['desc']
         self.category = self.entry['category']
+        self.exception = None
 
     def read(self):
         try:
             value = self.char.ReadValue({'none': 0})
-        except dbus.exceptions.DBusException:
+        except dbus.exceptions.DBusException as e:
             self.prop.invalidate()
+            self.exception = e
             return None
         return self.entry['func'](value)
 
@@ -164,6 +166,7 @@ class Device:
         self.name = self.prop.Get(self.path,'org.bluez.Device1','Alias')
         self.uuids = self.prop.Get(self.path,'org.bluez.Device1','UUIDs')
         self.appearance = self.prop.Get(self.path,'org.bluez.Device1','Appearance')
+        self.exception = None
 
     def connected(self):
         return self.prop.Get(self.path,'org.bluez.Device1','Connected')
@@ -176,7 +179,7 @@ class Device:
         try:
             self.dev.Connect()
         except dbus.exceptions.DBusException as e:
-            print " Error: {}".format(e)
+            self.exception = e
             return None
         else:
             return 1
