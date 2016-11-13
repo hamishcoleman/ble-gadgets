@@ -11,6 +11,8 @@ Well known GATT UUIDs:
 0x2a01  16bit     .gap.appearance
 0x2a04  uint16[4] .gap.peripheral_preferred_connection_parameters
 0x2a05  uint16[2] .gatt.service_changed
+0x2a06  uint8     .bluetooth.characteristic.alert_level (write only?)
+0x2a07  sint8     .bluetooth.characteristic.tx_power_level
 0x2a19  uint8     battery level
 0x2a23  40+24bit  system id
 0x2a24  utf8s     model number string
