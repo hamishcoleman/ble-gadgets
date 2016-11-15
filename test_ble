@@ -180,6 +180,16 @@ class Device:
         self.appearance = self.prop.Get(self.path,'org.bluez.Device1','Appearance')
         self.exception = None
 
+    def isBLE(self):
+        """FIXME: bluez appears not to have a way to know this for sure
+        """
+        # All the devices I have looked at match this filter, but I
+        # cannot find anything that says that only BLE devices have
+        # an "Appearance"
+        if self.appearance is not None:
+            return True
+        return False
+
     def connected(self):
         return self.prop.Get(self.path,'org.bluez.Device1','Connected')
 
@@ -293,10 +303,14 @@ def phase_find_new_devices(bus,prop):
     return device_list
 
 
-def phase_connect_new_devices(devices):
+def phase_connect_new_devices(args,devices):
     # then try to connect to them (and thus invalidate their properties)
     new_device_list = []
     for device in devices:
+        if not device.isBLE() and not args.also_nonble:
+            # try to exclude non BLE devices
+            continue
+
         print "Connecting", device.path
         connected = device.Connect()
         if connected:
@@ -339,13 +353,17 @@ def phase_characteristics_list(args,bus,prop):
         if args.fetchall:
             want = True
 
+        device = object.device(bus)
+        if not device.isBLE() and not args.also_nonble:
+            # try to exclude non BLE devices
+            want = False
+
         if not want:
             continue
 
         # TODO:
         # - if the hci interface is powered down, skip this characteristic
 
-        device = object.device(bus)
         if device.path not in tree:
             tree[device.path] = {}
 
@@ -394,7 +412,7 @@ def main(args):
 
     device_list = phase_find_new_devices(bus,prop)
 
-    device_list = phase_connect_new_devices(device_list)
+    device_list = phase_connect_new_devices(args,device_list)
 
     # TODO:
     # - if all of the devices we wanted to connect to failed, we might
@@ -417,6 +435,8 @@ def do_options():
     a.add_argument('-v','--verbose', action='count', default=0)
     a.add_argument('--fetchall', default=False,
         action="store_true", help="Fetch all characteristics")
+    a.add_argument('--also_nonble', default=False,
+        action="store_true", help="Also include non BLE devices")
     a.add_argument('--category',
         action="append", help="Add a category of characteristics to fetch")
 
