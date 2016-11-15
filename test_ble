@@ -59,6 +59,9 @@ gatt_list = {
     '00002a00-0000-1000-8000-00805f9b34fb': { 'func': dbus2string,
         'desc': 'device_name', 'category': 'string',
     },
+    '00002a05-0000-1000-8000-00805f9b34fb': { 'func': dbus2hexdump,
+        'desc': 'service_changed', 'category': 'misc',
+    },
     #'00002a06-0000-1000-8000-00805f9b34fb': { 'func': dbus2sint8,
     #    'desc': 'alert_level', 'category': 'writable', # TODO - handle writes
     #},
