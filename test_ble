@@ -59,7 +59,7 @@ gatt_list = {
     '00002a00-0000-1000-8000-00805f9b34fb': { 'func': dbus2string,
         'desc': 'device_name', 'category': 'string',
     },
-    #'00002a07-0000-1000-8000-00805f9b34fb': { 'func': dbus2sint8,
+    #'00002a06-0000-1000-8000-00805f9b34fb': { 'func': dbus2sint8,
     #    'desc': 'alert_level', 'category': 'writable', # TODO - handle writes
     #},
     '00002a07-0000-1000-8000-00805f9b34fb': { 'func': dbus2sint8,
@@ -412,11 +412,17 @@ def main(args):
 
     device_list = phase_find_new_devices(bus,prop)
 
+    if args.verbose:
+        print time.time(),"Phase 1: Connect new devices"
+
     device_list = phase_connect_new_devices(args,device_list)
 
     # TODO:
     # - if all of the devices we wanted to connect to failed, we might
     # want to power on/off the hci interface (and try again?)
+
+    if args.verbose:
+        print time.time(),"Phase 2: Wait for ServicesResolved"
 
     phase_wait_for_servicesresolved(prop,device_list)
 
@@ -426,9 +432,19 @@ def main(args):
 
     tree = phase_characteristics_list(args,bus,prop)
 
+    if args.verbose:
+        print time.time(),"Phase 3: Confirm needed Devices are Connected"
+
     phase_connect_devices(bus,prop,tree)
 
+    if args.verbose:
+        print time.time(),"Phase 4: Fetch Characteristic values"
+
     phase_fetch(bus,prop,tree)
+
+    if args.verbose:
+        print time.time(),"Phase 5: ends"
+
 
 def do_options():
     a = argparse.ArgumentParser('Explore Blootooth Low Energy devices')
