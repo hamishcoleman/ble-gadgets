@@ -9,6 +9,19 @@ import dbus
 import struct
 import time
 
+import os
+import sys
+
+# Ensure that we look for any modules in our local lib dir.  This allows simple
+# testing and development use.  It also does not break the case where the lib
+# has been installed properly on the normal sys.path
+sys.path.insert(0,
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
+                )
+# I would use site.addsitedir, but it does an append, not insert
+
+import hc.dbus.Property
+
 def dbus2string(array):
     s = ''
     for ch in array:
@@ -210,57 +223,6 @@ class Device:
             return 1
 
 
-class PropertyCache:
-    """Keep a cache of the managed objects
-    """
-    # Theoretically, I could listen for signals and keep a local model of
-    # the properties updated with that.  But that would need an event loop
-    # and (I think) more complextiy
-    #
-    # TODO - this is a hacky singleton, investigate python best practices
-
-    def __init__(self, bus):
-        # TODO: do we care that this hardcodes the destination on what is
-        # a generic call?
-        proxy = bus.get_object('org.bluez','/')
-
-        self.manager = dbus.Interface(proxy,
-                          dbus_interface="org.freedesktop.DBus.ObjectManager")
-        self.valid = 0
-
-    def _validate(self):
-        """Ensure that the cache is currently valid
-           This could be a more complex cache validity system, but right
-           now, it can simply throw away the whole cache
-        """
-        if not self.valid:
-            self.all_objects = self.manager.GetManagedObjects()
-            self.valid = 1
-
-    def invalidate(self):
-        self.valid = 0
-
-    def Get(self,path,interface,property):
-        self._validate()
-        if path not in self.all_objects:
-            return None
-        if interface not in self.all_objects[path]:
-            return None
-        if property not in self.all_objects[path][interface]:
-            return None
-        return self.all_objects[path][interface][property]
-
-    def interface2paths(self,interface):
-        """Return the set of all paths that have the given interface
-        """
-        self._validate()
-        result = set()
-        for path, interfaces in self.all_objects.iteritems():
-            if interface in interfaces:
-                result.add(path)
-        return result
-
-
 def list_devices(bus,prop):
     devices = prop.interface2paths('org.bluez.Device1')
     for path in devices:
@@ -411,7 +373,7 @@ def main(args):
     """
     bus = dbus.SystemBus()
 
-    prop = PropertyCache(bus)
+    prop = hc.dbus.Property.Cache(bus)
 
     device_list = phase_find_new_devices(bus,prop)
 
