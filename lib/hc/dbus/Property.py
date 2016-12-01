@@ -25,6 +25,8 @@ class Cache:
            now, it can simply throw away the whole cache
         """
         if not self.valid:
+            # TODO - ideally, we would detect that we have a main loop
+            # running and use an async call and run the loop while waiting
             self.all_objects = self.manager.GetManagedObjects()
             self.valid = 1
 
