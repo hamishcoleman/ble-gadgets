@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+#
+#
+
+import argparse
+import dbus
+
+from dbus.glib import DBusGMainLoop
+from gi.repository import GLib
+
+import os
+import sys
+
+# Ensure that we look for any modules in our local lib dir.  This allows simple
+# testing and development use.  It also does not break the case where the lib
+# has been installed properly on the normal sys.path
+sys.path.insert(0,
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')
+                )
+# I would use site.addsitedir, but it does an append, not insert
+
+import hc.dbus.Property
+
+
+def dump_signal(*args,**kwargs):
+    print kwargs['path'],args
+
+def main():
+    bus = dbus.SystemBus()
+    prop = hc.dbus.Property.Cache(bus)
+
+    all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
+    for path in all_gatt:
+        uuid = prop.Get(path,'org.bluez.GattCharacteristic1','UUID')
+        if uuid == '00002235-b38d-4985-720e-0f993a68ee41':
+            proxy = bus.get_object('org.bluez',path)
+            char = dbus.Interface(proxy,
+                        dbus_interface="org.bluez.GattCharacteristic1")
+            #print char.ReadValue({'none': 0})
+            print char.StartNotify({'none': 0})
+            print proxy.connect_to_signal('PropertiesChanged',dump_signal,
+                path_keyword='path')
+
+    print "start dumping"
+
+    #loop.quit()
+
+def do_options():
+    a = argparse.ArgumentParser('Download sensirion')
+    a.add_argument('-v','--verbose', action='count', default=0)
+
+    args = a.parse_args()
+
+    return args
+
+if __name__ == '__main__':
+    args = do_options()
+
+    DBusGMainLoop (set_as_default=True)
+    GLib.timeout_add(1, main)    
+    loop = GLib.MainLoop()
+    loop.run()
+
