@@ -1,5 +1,6 @@
 
 import struct
+import dbus
 
 def dbus2string(array):
     s = ''
@@ -99,3 +100,57 @@ gatt_list = {
 }
 
 
+class Characteristic:
+    """Representing a GATT characteristic
+    """
+
+    def __init__(self, bus, prop, path):
+        # FIXME - there should only be one instance for any path, we should
+        # keep a class dictionary and return refs to existing objects
+        # if found
+
+        self.path = path
+        self.prop = prop
+
+        proxy = bus.get_object('org.bluez',path)
+        self.char = dbus.Interface(proxy,
+                              dbus_interface="org.bluez.GattCharacteristic1")
+
+        # properties that will not change
+        self.uuid = self.prop.Get(self.path, 'org.bluez.GattCharacteristic1','UUID')
+
+        if self.uuid in gatt_list:
+            self.entry = gatt_list[self.uuid]
+            self.known = True
+        else:
+            self.entry = {
+                'func': dbus2hexdump,
+                'desc': 'UUID:'+self.uuid,
+                'category': 'unknown',
+            }
+            self.known = False
+
+        self.desc = self.entry['desc']
+        self.category = self.entry['category']
+        self.exception = None
+
+    def convertraw(self,raw):
+        """Given the raw read results, convert it to a meaningful object
+        """
+        return self.entry['func'](raw)
+
+    def read(self):
+        try:
+            value = self.char.ReadValue({'none': 0})
+        except dbus.exceptions.DBusException as e:
+            self.prop.invalidate()
+            self.exception = e
+            return None
+        return self.convertraw(value)
+
+    def device_path(self):
+        """Follow the pointers in the objects to find the parent device
+        """
+        service_path = self.prop.Get(self.path, 'org.bluez.GattCharacteristic1','Service')
+        device_path = self.prop.Get(service_path, 'org.bluez.GattService1','Device')
+        return device_path
