@@ -20,26 +20,26 @@ sys.path.insert(0,
 # I would use site.addsitedir, but it does an append, not insert
 
 import hc.dbus.Property
-
-
-def dump_signal(*args,**kwargs):
-    print kwargs['path'],args
+import hc.bluetooth.GATT
 
 def main():
+    def dump_signal(*args,**kwargs):
+        if 'Value' not in args[1]:
+            return
+        object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
+        print object.uuid,object.convertraw(args[1]['Value'])
+
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
 
+    bus.add_signal_receiver(dump_signal,'PropertiesChanged',
+                path_keyword='path')
+
     all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
     for path in all_gatt:
-        uuid = prop.Get(path,'org.bluez.GattCharacteristic1','UUID')
-        if uuid == '00002235-b38d-4985-720e-0f993a68ee41':
-            proxy = bus.get_object('org.bluez',path)
-            char = dbus.Interface(proxy,
-                        dbus_interface="org.bluez.GattCharacteristic1")
-            #print char.ReadValue({'none': 0})
-            print char.StartNotify({'none': 0})
-            print proxy.connect_to_signal('PropertiesChanged',dump_signal,
-                path_keyword='path')
+        object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
+        if object.uuid == '00002235-b38d-4985-720e-0f993a68ee41':
+            print object.StartNotify()
 
     print "start dumping"
 

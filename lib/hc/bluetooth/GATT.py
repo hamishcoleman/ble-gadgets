@@ -148,6 +148,12 @@ class Characteristic:
             return None
         return self.convertraw(value)
 
+    def StartNotify(self):
+        return self.char.StartNotify()
+
+    def StopNotify(self):
+        return self.char.StopNotify()
+
     def device_path(self):
         """Follow the pointers in the objects to find the parent device
         """
