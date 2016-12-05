@@ -72,9 +72,6 @@ class Characteristic:
         device_path = self.prop.Get(service_path, 'org.bluez.GattService1','Device')
         return device_path
 
-    def device(self,bus):
-        return Device(bus,self.prop,self.device_path())
-
 
 class Device:
     """Representing a bluetooth device
@@ -221,7 +218,7 @@ def phase_characteristics_list(args,bus,prop):
         if args.fetchall:
             want = True
 
-        device = object.device(bus)
+        device = Device(bus,prop,object.device_path())
         if not device.isBLE() and not args.also_nonble:
             # try to exclude non BLE devices
             want = False
