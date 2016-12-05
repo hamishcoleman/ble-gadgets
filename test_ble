@@ -56,6 +56,11 @@ class Characteristic:
         self.category = self.entry['category']
         self.exception = None
 
+    def convertraw(self,raw):
+        """Given the raw read results, convert it to a meaningful object
+        """
+        return self.entry['func'](raw)
+
     def read(self):
         try:
             value = self.char.ReadValue({'none': 0})
@@ -63,7 +68,7 @@ class Characteristic:
             self.prop.invalidate()
             self.exception = e
             return None
-        return self.entry['func'](value)
+        return self.convertraw(value)
 
     def device_path(self):
         """Follow the pointers in the objects to find the parent device
