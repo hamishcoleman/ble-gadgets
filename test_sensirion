@@ -3,6 +3,7 @@
 #
 
 import argparse
+import struct
 import dbus
 
 from dbus.glib import DBusGMainLoop
@@ -21,13 +22,15 @@ sys.path.insert(0,
 
 import hc.dbus.Property
 import hc.bluetooth.GATT
+import time
 
 def main():
     def dump_signal(*args,**kwargs):
+        # assert args[0] == org.bluez.GattCharacteristic1
         if 'Value' not in args[1]:
             return
         object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
-        print object.uuid,object.convertraw(args[1]['Value'])
+        print time.time(), object.uuid, hc.bluetooth.GATT.dbus2hexdump(args[1]['Value'])
 
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
@@ -40,6 +43,27 @@ def main():
         object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
         if object.uuid == '00002235-b38d-4985-720e-0f993a68ee41':
             print object.StartNotify()
+
+        if object.uuid == '0000f235-b38d-4985-720e-0f993a68ee41':
+            si_settime = object
+        if object.uuid == '0000f236-b38d-4985-720e-0f993a68ee41':
+            si_mintime = object
+        if object.uuid == '0000f237-b38d-4985-720e-0f993a68ee41':
+            si_maxtime = object
+        if object.uuid == '0000f238-b38d-4985-720e-0f993a68ee41':
+            si_sendlog = object
+
+    now = time.time()*1000000
+    now_bytes = struct.pack('<Q',now)
+    si_settime.write(now_bytes)
+
+    print 'min time=',si_mintime.read()
+    print 'max time=',si_maxtime.read()
+
+    si_sendlog.write(struct.pack('B',1))
+
+    # now notifications should have a mix of 4 byte and larger ones, decode
+    # the larger ones as history objects ...
 
     print "start dumping"
 

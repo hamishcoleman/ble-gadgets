@@ -18,6 +18,10 @@ def dbus2uint32t(array):
     s = dbus2string(array)
     return (struct.unpack('<I',s))[0]
 
+def dbus2uint64t(array):
+    s = dbus2string(array)
+    return (struct.unpack('<Q',s))[0]
+
 def dbus2sint8(array):
     if array:
         return (struct.unpack('b',chr(array[0])))[0]
@@ -94,6 +98,12 @@ gatt_list = {
     '00002235-b38d-4985-720e-0f993a68ee41': { 'func': dbus2float32t,
         'desc': 'Temperature', 'category': 'normal',
     },
+    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': dbus2uint64t,
+        'desc': 'log_Min_Time', 'category': 'misc',
+    },
+    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': dbus2uint64t,
+        'desc': 'log_Max_Time', 'category': 'misc',
+    },
     '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': dbus2uint32t,
         'desc': 'logger_interval', 'category': 'misc',
     },
@@ -147,6 +157,15 @@ class Characteristic:
             self.exception = e
             return None
         return self.convertraw(value)
+
+    def write(self,value):
+        try:
+            result = self.char.WriteValue(value,{'none':0})
+        except dbus.exceptions.DBusException as e:
+            self.prop.invalidate()
+            self.exception = e
+            return None
+        return result
 
     def StartNotify(self):
         return self.char.StartNotify()
