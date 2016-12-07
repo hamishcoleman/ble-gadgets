@@ -30,7 +30,7 @@ def main():
         if 'Value' not in args[1]:
             return
         object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
-        print time.time(), object.uuid, hc.bluetooth.GATT.dbus2hexdump(args[1]['Value'])
+        print time.time(), object.uuid, hc.bluetooth.GATT.TypeHexDump.raw2value(args[1]['Value'])
 
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
@@ -54,13 +54,12 @@ def main():
             si_sendlog = object
 
     now = time.time()*1000000
-    now_bytes = struct.pack('<Q',now)
-    si_settime.write(now_bytes)
+    si_settime.write(now)
 
     print 'min time=',si_mintime.read()
     print 'max time=',si_maxtime.read()
 
-    si_sendlog.write(struct.pack('B',1))
+    si_sendlog.write(1)
 
     # now notifications should have a mix of 4 byte and larger ones, decode
     # the larger ones as history objects ...
