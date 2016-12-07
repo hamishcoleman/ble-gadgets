@@ -66,9 +66,9 @@ def main():
     print 'max time=',si_maxtime.read()
     # what about logger interval?  dont we need that too?
 
-    si_humidity.StartNotify()
-    si_temperature.StartNotify()
-    si_sendlog.write(1)
+    GLib.timeout_add(0,lambda: si_humidity.StartNotify())
+    GLib.timeout_add(0,lambda: si_temperature.StartNotify())
+    GLib.timeout_add(0,lambda: si_sendlog.write(1))
 
     print "start dumping"
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     args = do_options()
 
     DBusGMainLoop (set_as_default=True)
-    GLib.timeout_add(1, main)    
+    GLib.timeout_add(0, main)
     loop = GLib.MainLoop()
     loop.run()
 
