@@ -96,6 +96,16 @@ class TypeTimestamp64us(object):
         return TypeUint64.value2raw(value*1000000)
 
 
+class TypePercentUint8(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return TypeUint8.raw2value(raw) / 100.0
+
+    @classmethod
+    def value2raw(cls, value):
+        return TypeUint8.value2raw(value*100)
+
+
 class TypeSensirionFloat32(object):
     @classmethod
     def raw2value(cls, raw):
@@ -123,7 +133,7 @@ gatt_list = {
     '00002a07-0000-1000-8000-00805f9b34fb': { 'func': TypeSint8,
         'desc': 'tx_power_level', 'category': 'normal',
     },
-    '00002a19-0000-1000-8000-00805f9b34fb': { 'func': TypeUint8,
+    '00002a19-0000-1000-8000-00805f9b34fb': { 'func': TypePercentUint8,
         'desc': 'Battery', 'category': 'normal',
     },
     '00002a23-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDigits,
