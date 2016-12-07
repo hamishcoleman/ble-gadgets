@@ -30,7 +30,7 @@ def main():
         if 'Value' not in args[1]:
             return
         object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
-        print time.time(), object.uuid, hc.bluetooth.GATT.TypeHexDump.raw2value(args[1]['Value'])
+        print time.time(), object.desc, object.raw2value(args[1]['Value'])
 
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
@@ -53,8 +53,7 @@ def main():
         if object.uuid == '0000f238-b38d-4985-720e-0f993a68ee41':
             si_sendlog = object
 
-    now = time.time()*1000000
-    si_settime.write(now)
+    si_settime.write(time.time())
 
     print 'min time=',si_mintime.read()
     print 'max time=',si_maxtime.read()

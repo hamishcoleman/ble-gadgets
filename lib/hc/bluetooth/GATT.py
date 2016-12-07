@@ -86,6 +86,29 @@ class TypeHexDump(object):
         return h+' '+s
 
 
+class TypeTimestamp64us(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return TypeUint64.raw2value(raw) / 1000000.0
+
+    @classmethod
+    def value2raw(cls, value):
+        return TypeUint64.value2raw(value*1000000)
+
+
+class TypeSensirionFloat32(object):
+    @classmethod
+    def raw2value(cls, raw):
+        if len(raw) == 4:
+            return TypeFloat32.raw2value(raw)
+        r = []
+        r.append(TypeUint32.raw2value(raw[0:4]))
+        del raw[0:4]
+        while len(raw)>3:
+            r.append(TypeFloat32.raw2value(raw[0:4]))
+            del raw[0:4]
+        return r
+
 gatt_list = {
     # Standard things
     '00002a00-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
@@ -126,19 +149,19 @@ gatt_list = {
     },
 
     # Sensirion SmartGadget
-    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': TypeFloat32,
+    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirionFloat32,
         'desc': 'Humidity', 'category': 'normal',
     },
-    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': TypeFloat32,
+    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirionFloat32,
         'desc': 'Temperature', 'category': 'normal',
     },
-    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeUint64,
+    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
         'desc': 'set_Time', 'category': 'misc',
     },
-    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeUint64,
+    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
         'desc': 'log_Min_Time', 'category': 'misc',
     },
-    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeUint64,
+    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
         'desc': 'log_Max_Time', 'category': 'misc',
     },
     '0000f238-b38d-4985-720e-0f993a68ee41': { 'func': TypeSint8,
