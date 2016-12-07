@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 #
-#
+# Use the strange sensirion notify protocol to dump the internal log from these
+# temperature/humidity sensors
+
+# TODO
+# - accumulate the data dump and output it rationally
+# - determine when the data dump is complete and optionally exit
+# - accumulate normal notifies and output graphable logs
 
 import argparse
 import struct
@@ -41,9 +47,10 @@ def main():
     all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
     for path in all_gatt:
         object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
+        if object.uuid == '00001235-b38d-4985-720e-0f993a68ee41':
+            si_humidity = object
         if object.uuid == '00002235-b38d-4985-720e-0f993a68ee41':
-            print object.StartNotify()
-
+            si_temperature = object
         if object.uuid == '0000f235-b38d-4985-720e-0f993a68ee41':
             si_settime = object
         if object.uuid == '0000f236-b38d-4985-720e-0f993a68ee41':
@@ -57,15 +64,13 @@ def main():
 
     print 'min time=',si_mintime.read()
     print 'max time=',si_maxtime.read()
+    # what about logger interval?  dont we need that too?
 
+    si_humidity.StartNotify()
+    si_temperature.StartNotify()
     si_sendlog.write(1)
 
-    # now notifications should have a mix of 4 byte and larger ones, decode
-    # the larger ones as history objects ...
-
     print "start dumping"
-
-    #loop.quit()
 
 def do_options():
     a = argparse.ArgumentParser('Download sensirion')
