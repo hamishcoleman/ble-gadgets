@@ -96,6 +96,16 @@ class TypeTimestamp64us(object):
         return TypeUint64.value2raw(value*1000000)
 
 
+class TypeSensirion32interval(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return TypeUint32.raw2value(raw) / 1000.0
+
+    @classmethod
+    def value2raw(cls, value):
+        return TypeUint32.value2raw(value*1000)
+
+
 class TypePercentUint8(object):
     @classmethod
     def raw2value(cls, raw):
@@ -177,7 +187,7 @@ gatt_list = {
     '0000f238-b38d-4985-720e-0f993a68ee41': { 'func': TypeSint8,
         'desc': 'trigger_send_log', 'category': 'misc',
     },
-    '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': TypeUint32,
+    '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirion32interval,
         'desc': 'logger_interval', 'category': 'misc',
     },
 }
