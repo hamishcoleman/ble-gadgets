@@ -30,13 +30,82 @@ import hc.dbus.Property
 import hc.bluetooth.GATT
 import time
 
+def dump_history(device_path, hist):
+    print "\n"
+    print "#Log for",device_path
+    print "#timestamp temperature humidity"
+    for timestamp in sorted(hist.keys()):
+        if 'Temperature' in hist[timestamp]:
+            temperature = '{:.2f}'.format(hist[timestamp]['Temperature'])
+        else:
+            temperature = '\N'
+        if 'Humidity' in hist[timestamp]:
+            humidity = '{:.2f}'.format(hist[timestamp]['Humidity'])
+        else:
+            humidity = '\N'
+        print "{} {} {} {}".format(timestamp, temperature, humidity, device_path )
+    print "\n"
+
 def main():
     def dump_signal(*args,**kwargs):
         # assert args[0] == org.bluez.GattCharacteristic1
         if 'Value' not in args[1]:
             return
+
         object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
-        print time.time(), object.desc, object.raw2value(args[1]['Value'])
+        device_path = object.device_path()
+        device = devices[device_path]
+        now = time.time()
+
+        # FIXME - timeout should be in its own task
+        if device['_dumping']:
+            if '_dump_timeout' in device and now > device['_dump_timeout']:
+                # timed out waiting for the next log dump packet
+                print "timeout was",device['_dump_timeout']
+                dump_history(device_path, device['_hist'])
+                device['_dumping'] = False
+
+        value = object.raw2value(args[1]['Value'])
+        if not device['_dumping'] or type(value) == type(float()):
+            if object.desc in device['_prev'] and device['_prev'][object.desc] == value:
+                # skip duplicates
+                return
+            if object.desc == 'Temperature':
+                print "{} {:.2f} \N {}".format(now, value, object.device_path())
+            elif object.desc == 'Humidity':
+                print "{} \N {:.2f} {}".format(now, value, object.device_path())
+            else:
+                print "#", now, value, object.device_path()
+            device['_prev'][object.desc] = value
+            return
+
+        device['_dump_timeout'] = now+2
+        index = value.pop(0)
+        print "#", now, object.device_path(), '@', index, object.desc
+        timestamp = device['_min'] + device['_int']*(index-1)
+        for v in value:
+            if timestamp not in device['_hist']:
+                device['_hist'][timestamp] = {}
+            device['_hist'][timestamp][object.desc] = v
+            timestamp += device['_int']
+
+        # there is something wrong with the max time value
+        #if timestamp >= device['_max']:
+        #    device['_hist_done'] += 1
+        #
+        #if device['_hist_done'] > 1:
+        #    print "Dump", device['_hist']
+
+    wanted = {
+        '00001235-b38d-4985-720e-0f993a68ee41': 'humidity',
+        '00002235-b38d-4985-720e-0f993a68ee41': 'temperature',
+        '0000f235-b38d-4985-720e-0f993a68ee41': 'settime',
+        '0000f236-b38d-4985-720e-0f993a68ee41': 'mintime',
+        '0000f237-b38d-4985-720e-0f993a68ee41': 'maxtime',
+        '0000f238-b38d-4985-720e-0f993a68ee41': 'sendlog',
+        '0000f239-b38d-4985-720e-0f993a68ee41': 'interval',
+    }
+    devices = {}
 
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
@@ -47,28 +116,36 @@ def main():
     all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
     for path in all_gatt:
         object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
-        if object.uuid == '00001235-b38d-4985-720e-0f993a68ee41':
-            si_humidity = object
-        if object.uuid == '00002235-b38d-4985-720e-0f993a68ee41':
-            si_temperature = object
-        if object.uuid == '0000f235-b38d-4985-720e-0f993a68ee41':
-            si_settime = object
-        if object.uuid == '0000f236-b38d-4985-720e-0f993a68ee41':
-            si_mintime = object
-        if object.uuid == '0000f237-b38d-4985-720e-0f993a68ee41':
-            si_maxtime = object
-        if object.uuid == '0000f238-b38d-4985-720e-0f993a68ee41':
-            si_sendlog = object
+        if object.uuid in wanted:
+            name = wanted[object.uuid]
+            device_path = object.device_path()
+            if device_path not in devices:
+                devices[device_path] = {}
+            devices[device_path][name] = object
 
-    si_settime.write(time.time())
+    for d in devices:
+        print 'Found: ',d
+        # FIXME - skip devices that are not online!
+        now = time.time()
+        devices[d]['settime'].write(now)
+        devices[d]['_min'] = devices[d]['mintime'].read()
+        devices[d]['_max'] = devices[d]['maxtime'].read()
+        devices[d]['_int'] = devices[d]['interval'].read()
+        devices[d]['_prev'] = {}
+        devices[d]['_hist'] = {}
+        devices[d]['_dumping'] = True
 
-    print 'min time=',si_mintime.read()
-    print 'max time=',si_maxtime.read()
-    # what about logger interval?  dont we need that too?
+        print ' settime =',now
+        print ' min time=',devices[d]['_min']
+        print ' max time=',devices[d]['_max']
+        print ' interval=',devices[d]['_int']
 
-    GLib.timeout_add(0,lambda: si_humidity.StartNotify())
-    GLib.timeout_add(0,lambda: si_temperature.StartNotify())
-    GLib.timeout_add(0,lambda: si_sendlog.write(1))
+        timespan = devices[d]['_max']-devices[d]['_min']
+        print ' timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
+
+        GLib.timeout_add(0,lambda: devices[d]['humidity'].StartNotify())
+        GLib.timeout_add(0,lambda: devices[d]['temperature'].StartNotify())
+        GLib.timeout_add(0,lambda: devices[d]['sendlog'].write(1))
 
     print "start dumping"
 
