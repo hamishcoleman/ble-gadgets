@@ -46,6 +46,12 @@ def dump_history(device_path, hist):
         print "{} {} {} {}".format(timestamp, temperature, humidity, device_path )
     print "\n"
 
+def glib_runonce(func,*args):
+    def runonce(func,*args):
+        func(*args)
+        return False
+    GLib.timeout_add(0,runonce,func,*args)
+
 def main():
     def dump_signal(*args,**kwargs):
         # assert args[0] == org.bluez.GattCharacteristic1
@@ -143,9 +149,9 @@ def main():
         timespan = devices[d]['_max']-devices[d]['_min']
         print ' timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
 
-        GLib.timeout_add(0,lambda: devices[d]['humidity'].StartNotify())
-        GLib.timeout_add(1,lambda: devices[d]['temperature'].StartNotify())
-        GLib.timeout_add(2,lambda: devices[d]['sendlog'].write(1))
+        glib_runonce(devices[d]['humidity'].StartNotify)
+        glib_runonce(devices[d]['temperature'].StartNotify)
+        glib_runonce(devices[d]['sendlog'].write,1)
 
     print "start dumping"
 
@@ -161,7 +167,7 @@ if __name__ == '__main__':
     args = do_options()
 
     DBusGMainLoop (set_as_default=True)
-    GLib.timeout_add(0, main)
+    glib_runonce(main)
     loop = GLib.MainLoop()
     loop.run()
 
