@@ -144,8 +144,8 @@ def main():
         print ' timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
 
         GLib.timeout_add(0,lambda: devices[d]['humidity'].StartNotify())
-        GLib.timeout_add(0,lambda: devices[d]['temperature'].StartNotify())
-        GLib.timeout_add(0,lambda: devices[d]['sendlog'].write(1))
+        GLib.timeout_add(1,lambda: devices[d]['temperature'].StartNotify())
+        GLib.timeout_add(2,lambda: devices[d]['sendlog'].write(1))
 
     print "start dumping"
 
