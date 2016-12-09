@@ -86,14 +86,14 @@ class TypeHexDump(object):
         return h+' '+s
 
 
-class TypeTimestamp64us(object):
+class TypeTimestamp64ms(object):
     @classmethod
     def raw2value(cls, raw):
-        return TypeUint64.raw2value(raw) / 1000000.0
+        return TypeUint64.raw2value(raw) / 1000.0
 
     @classmethod
     def value2raw(cls, value):
-        return TypeUint64.value2raw(value*1000000)
+        return TypeUint64.value2raw(value*1000)
 
 
 class TypeSensirion32interval(object):
@@ -175,13 +175,13 @@ gatt_list = {
     '00002235-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirionFloat32,
         'desc': 'Temperature', 'category': 'normal',
     },
-    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
+    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
         'desc': 'set_Time', 'category': 'misc',
     },
-    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
+    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
         'desc': 'log_Min_Time', 'category': 'misc',
     },
-    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64us,
+    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
         'desc': 'log_Max_Time', 'category': 'misc',
     },
     '0000f238-b38d-4985-720e-0f993a68ee41': { 'func': TypeSint8,
