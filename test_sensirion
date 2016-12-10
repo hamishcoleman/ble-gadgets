@@ -67,7 +67,7 @@ def main():
         if device['_dumping']:
             if '_dump_timeout' in device and now > device['_dump_timeout']:
                 # timed out waiting for the next log dump packet
-                print "timeout was",device['_dump_timeout']
+                print "# timeout was",device['_dump_timeout']
                 dump_history(device_path, device['_hist'])
                 device['_dumping'] = False
 
@@ -81,13 +81,13 @@ def main():
             elif object.desc == 'Humidity':
                 print "{} \N {:.2f} {}".format(now, value, object.device_path())
             else:
-                print "#", now, value, object.device_path()
+                print "#", now, object.desc, value, object.device_path()
             device['_prev'][object.desc] = value
             return
 
         device['_dump_timeout'] = now+2
         index = value.pop(0)
-        print "#", now, object.device_path(), '@', index, object.desc
+        print "#", now, '@', index, object.desc, object.device_path()
         timestamp = device['_min'] + device['_int']*(index-1)
         for v in value:
             if timestamp not in device['_hist']:
@@ -130,7 +130,7 @@ def main():
             devices[device_path][name] = object
 
     for d in devices:
-        print 'Found: ',d
+        print '#Found: ',d
         # FIXME - skip devices that are not online!
         now = time.time()
         devices[d]['settime'].write(now)
@@ -141,19 +141,20 @@ def main():
         devices[d]['_hist'] = {}
         devices[d]['_dumping'] = True
 
-        print ' settime =',now
-        print ' min time=',devices[d]['_min']
-        print ' max time=',devices[d]['_max']
-        print ' interval=',devices[d]['_int']
+        print '# settime =',now
+        print '# min time=',devices[d]['_min']
+        print '# max time=',devices[d]['_max']
+        print '# interval=',devices[d]['_int']
 
         timespan = devices[d]['_max']-devices[d]['_min']
-        print ' timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
+        print '# timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
 
         glib_runonce(devices[d]['humidity'].StartNotify)
         glib_runonce(devices[d]['temperature'].StartNotify)
         glib_runonce(devices[d]['sendlog'].write,1)
 
-    print "start dumping"
+    print "\n#start dumping"
+    return False
 
 def do_options():
     a = argparse.ArgumentParser('Download sensirion')
