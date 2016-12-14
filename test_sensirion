@@ -88,12 +88,13 @@ def main():
         device['_dump_timeout'] = now+2
         index = value.pop(0)
         print "#", now, '@', index, object.desc, object.device_path()
-        timestamp = device['_min'] + device['_int']*(index-1)
         for v in value:
+            timestamp = device['_max'] - device['_int']*(index-1)
             if timestamp not in device['_hist']:
                 device['_hist'][timestamp] = {}
             device['_hist'][timestamp][object.desc] = v
-            timestamp += device['_int']
+            device['_hist'][timestamp]['index'] = index
+            index += 1
 
         # there is something wrong with the max time value
         #if timestamp >= device['_max']:
