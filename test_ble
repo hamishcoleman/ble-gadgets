@@ -3,6 +3,11 @@
 # Simple test script to try and interact with BLE devices
 #
 
+# TODO
+# - refactor to use asynchronous requests for lengthy tasks (like "connecting")
+# - offer output in a more machine-readable way (and link to a graph tool?)
+# - make more of the objects reusable and share them with test_sensirion
+
 import argparse
 
 import dbus

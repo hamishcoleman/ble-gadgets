@@ -4,9 +4,10 @@
 # temperature/humidity sensors
 
 # TODO
-# - accumulate the data dump and output it rationally
 # - determine when the data dump is complete and optionally exit
-# - accumulate normal notifies and output graphable logs
+# - find holes in the recieved data dump and re-request the missing parts
+# - create an object model for the sensirion device and clean up most of
+#   the spaghetti
 
 import argparse
 import struct

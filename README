@@ -15,4 +15,13 @@ Getting started:
 
     sudo gatttool -i hci1 -t random -b $ADDR -I
 
+Tools here:
+
+test_ble        - script to fetch attributes from BLE devices.
+    Devices must have been discovered by turning bluetooth scanning on
+    beforehand.  By default it only fetches "known" attributes that are
+    in the category "graphable".  Use the "--help" option for more details
+
+test_sensirion  - script to download the saved temperature log from Sensirion
+    SmartGadget Temperature/Humidity sensors.
 
