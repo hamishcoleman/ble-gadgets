@@ -81,13 +81,23 @@ def main():
             if object.desc in device['_prev'] and device['_prev'][object.desc] == value:
                 # skip duplicates
                 return
-            if object.desc == 'Temperature':
+            device['_prev'][object.desc] = value
+            if type(value) == type(float()) and object.desc == 'Temperature':
+                if object.desc in device['_prev']:
+                    print "{} {:.2f} \N".format(
+                        now-1,
+                        device['_prev']['Temperature'],
+                    )
                 print "{} {:.2f} \N {}".format(now, value, object.device_path())
-            elif object.desc == 'Humidity':
+            elif type(value) == type(float()) and object.desc == 'Humidity':
+                if object.desc in device['_prev']:
+                    print "{} \N {:.2f}".format(
+                        now-1,
+                        device['_prev']['Humidity'],
+                    )
                 print "{} \N {:.2f} {}".format(now, value, object.device_path())
             else:
                 print "#", now, object.desc, value, object.device_path()
-            device['_prev'][object.desc] = value
             return
 
         device['_dump_timeout'] = now+2
