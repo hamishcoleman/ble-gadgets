@@ -43,7 +43,12 @@ def dump_history(device_path, hist):
             humidity = '{:.2f}'.format(hist[timestamp]['Humidity'])
         else:
             humidity = '\N'
-        print "{} {} {} {}".format(timestamp, temperature, humidity, device_path )
+        print "{} {} {} {} {}".format(
+            timestamp,
+            temperature, humidity,
+            hist[timestamp]['index'],
+            device_path,
+        )
     print "\n"
 
 def glib_runonce(func,*args):
