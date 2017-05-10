@@ -149,7 +149,9 @@ def main():
     for d in devices:
         print '#Found: ',d
         # FIXME - skip devices that are not online!
-        now = time.time()
+
+        # the device appears to truncate to seconds internally, match that here
+        now = int(time.time())
         devices[d]['settime'].write(now)
         devices[d]['_min'] = devices[d]['mintime'].read()
         devices[d]['_max'] = devices[d]['maxtime'].read()
