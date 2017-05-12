@@ -19,6 +19,9 @@ from gi.repository import GLib
 import os
 import sys
 
+# ungh - a hacky global var
+hack_quit = None
+
 # Ensure that we look for any modules in our local lib dir.  This allows simple
 # testing and development use.  It also does not break the case where the lib
 # has been installed properly on the normal sys.path
@@ -76,6 +79,9 @@ def main():
                 print "# timeout was",device['_dump_timeout']
                 dump_history(device_path, device['_hist'])
                 device['_dumping'] = False
+
+                if hack_quit is not None:
+                    hack_quit.quit()
 
         value = object.raw2value(args[1]['Value'])
         if not device['_dumping'] or type(value) == type(float()):
@@ -178,6 +184,8 @@ def main():
 def do_options():
     a = argparse.ArgumentParser('Download sensirion')
     a.add_argument('-v','--verbose', action='count', default=0)
+    a.add_argument('--downloadonly', default=True, action='store_true',
+        help="Turn off real-time measurements - just download the archive" )
 
     args = a.parse_args()
 
@@ -189,5 +197,7 @@ if __name__ == '__main__':
     DBusGMainLoop (set_as_default=True)
     glib_runonce(main)
     loop = GLib.MainLoop()
+    if args.downloadonly:
+        hack_quit = loop
     loop.run()
 
