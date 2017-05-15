@@ -176,7 +176,7 @@ def main():
 def do_options():
     a = argparse.ArgumentParser('Download sensirion')
     a.add_argument('-v','--verbose', action='count', default=0)
-    a.add_argument('--downloadonly', default=True, action='store_true',
+    a.add_argument('--downloadonly', default=False, action='store_true',
         help="Turn off real-time measurements - just download the archive" )
 
     args = a.parse_args()
