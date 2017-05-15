@@ -62,7 +62,9 @@ def main():
         object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
         device_path = object.device_path()
         device = devices[device_path]
-        now = time.time()
+
+        # round time to 1/100 of a second
+        now = int(time.time()*100)/100.0
 
         # FIXME - timeout should be in its own task
         if device['_dumping']:
@@ -78,20 +80,26 @@ def main():
         values = object.raw2value(args[1]['Value'])
 
         if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
-            # FIXME - need to re-add the deduplication here!
-#            if object.desc in device['_prev'] and device['_prev'][object.desc] == value:
-#                # skip duplicates
-#                return
-
-            # FIXME - need to re-add the glomming of readings together here!
-            #   (ie: get two notifies, one for temp, one for humid in same time)
-            if object.desc == 'Temperature':
-                print "{} {:.2f} \N {}".format(now, values.temperature, object.device_path())
-            elif object.desc == 'Humidity':
-                print "{} \N {:.2f} {}".format(now, values.humidity, object.device_path())
+            values.timestamp = now
+            if device['_prev'] is None:
+                # first data, just use it
+                device['_prev'] = values
+                return
+            elif device['_prev'].timestamp == now:
+                # just merge this new report with the existing measurement
+                device['_prev'] += values
+                return
             else:
-                raise ValueError
-            return
+                # its a new time period, flush the old data
+                print "{} {} {}".format(
+                    device['_prev'].timestamp,
+                    device['_prev'],
+                    object.device_path()
+                )
+
+                # save the new data
+                device['_prev'] = values
+                return
 
         if type(values) != type(list()):
             print "#", now, object.desc, values, object.device_path()
@@ -146,7 +154,7 @@ def main():
         devices[d]['_min'] = dev.mintime.read()
         devices[d]['_max'] = dev.maxtime.read()
         devices[d]['_int'] = dev.interval.read()
-        devices[d]['_prev'] = {}
+        devices[d]['_prev'] = None
         devices[d]['_hist'] = {}
         devices[d]['_dumping'] = True
 
