@@ -40,17 +40,9 @@ def dump_history(device_path, hist):
     print "#Log for",device_path
     print "#timestamp temperature humidity"
     for timestamp in sorted(hist.keys()):
-        if hist[timestamp].temperature is not None:
-            temperature = '{:.2f}'.format(hist[timestamp].temperature)
-        else:
-            temperature = '\N'
-        if hist[timestamp].humidity is not None:
-            humidity = '{:.2f}'.format(hist[timestamp].humidity)
-        else:
-            humidity = '\N'
-        print "{} {} {} {} {}".format(
+        print "{} {} {} {}".format(
             timestamp,
-            temperature, humidity,
+            hist[timestamp],
             hist[timestamp].index,
             device_path,
         )

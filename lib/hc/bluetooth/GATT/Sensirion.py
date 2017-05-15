@@ -106,4 +106,22 @@ class Measurement:
 
         return self
 
+    def __str__(self):
+
+        # if we have no values, dont return a string!
+        if self.temperature is None and self.humidity is None:
+            return None
+
+        s = ''
+        if self.temperature is not None:
+            s += "{:.2f}".format(self.temperature)
+        else:
+            s += "\N"
+        s += " "
+        if self.humidity is not None:
+            s += "{:.2f}".format(self.humidity)
+        else:
+            s += "\N"
+
+        return s
 
