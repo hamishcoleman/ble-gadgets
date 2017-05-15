@@ -40,18 +40,18 @@ def dump_history(device_path, hist):
     print "#Log for",device_path
     print "#timestamp temperature humidity"
     for timestamp in sorted(hist.keys()):
-        if 'Temperature' in hist[timestamp]:
-            temperature = '{:.2f}'.format(hist[timestamp]['Temperature'])
+        if hist[timestamp].temperature is not None:
+            temperature = '{:.2f}'.format(hist[timestamp].temperature)
         else:
             temperature = '\N'
-        if 'Humidity' in hist[timestamp]:
-            humidity = '{:.2f}'.format(hist[timestamp]['Humidity'])
+        if hist[timestamp].humidity is not None:
+            humidity = '{:.2f}'.format(hist[timestamp].humidity)
         else:
             humidity = '\N'
         print "{} {} {} {} {}".format(
             timestamp,
             temperature, humidity,
-            hist[timestamp]['index'],
+            hist[timestamp].index,
             device_path,
         )
     print "\n"
@@ -84,40 +84,37 @@ def main():
                 if hack_quit is not None:
                     hack_quit.quit()
 
-        value = object.raw2value(args[1]['Value'])
-        if not device['_dumping'] or type(value) == type(float()):
-            if object.desc in device['_prev'] and device['_prev'][object.desc] == value:
-                # skip duplicates
-                return
-            device['_prev'][object.desc] = value
-            if type(value) == type(float()) and object.desc == 'Temperature':
-                if object.desc in device['_prev']:
-                    print "{} {:.2f} \N".format(
-                        now-1,
-                        device['_prev']['Temperature'],
-                    )
-                print "{} {:.2f} \N {}".format(now, value, object.device_path())
-            elif type(value) == type(float()) and object.desc == 'Humidity':
-                if object.desc in device['_prev']:
-                    print "{} \N {:.2f}".format(
-                        now-1,
-                        device['_prev']['Humidity'],
-                    )
-                print "{} \N {:.2f} {}".format(now, value, object.device_path())
+        values = object.raw2value(args[1]['Value'])
+
+        if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
+            # FIXME - need to re-add the deduplication here!
+#            if object.desc in device['_prev'] and device['_prev'][object.desc] == value:
+#                # skip duplicates
+#                return
+
+            # FIXME - need to re-add the glomming of readings together here!
+            #   (ie: get two notifies, one for temp, one for humid in same time)
+            if object.desc == 'Temperature':
+                print "{} {:.2f} \N {}".format(now, values.temperature, object.device_path())
+            elif object.desc == 'Humidity':
+                print "{} \N {:.2f} {}".format(now, values.humidity, object.device_path())
             else:
-                print "#", now, object.desc, value, object.device_path()
+                raise ValueError
+            return
+
+        if type(values) != type(list()):
+            print "#", now, object.desc, values, object.device_path()
             return
 
         device['_dump_timeout'] = now+2
-        index = value.pop(0)
+        index = values[0].index
         print "#", now, '@', index, object.desc, object.device_path()
-        for v in value:
+        for v in values:
+            index = v.index
             timestamp = device['_max'] - device['_int']*(index-1)
             if timestamp not in device['_hist']:
-                device['_hist'][timestamp] = {}
-            device['_hist'][timestamp][object.desc] = v
-            device['_hist'][timestamp]['index'] = index
-            index += 1
+                device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
+            device['_hist'][timestamp] += v
 
         # there is something wrong with the max time value
         #if timestamp >= device['_max']:
