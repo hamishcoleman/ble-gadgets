@@ -63,8 +63,9 @@ def main():
         device_path = object.device_path()
         device = devices[device_path]
 
-        # round time to 1/100 of a second
-        now = int(time.time()*100)/100.0
+        # the device sends notifies once per second, so we should bucket our
+        # data with that in mind - round time to 1/10 of a second
+        now = int(time.time()*10)/10.0
 
         # FIXME - timeout should be in its own task
         if device['_dumping']:
@@ -82,7 +83,7 @@ def main():
         if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
             values.timestamp = now
             if device['_prev'] is None:
-                # first data, just use it
+                # first data
                 device['_prev'] = values
                 return
             elif device['_prev'].timestamp == now:
@@ -90,7 +91,7 @@ def main():
                 device['_prev'] += values
                 return
             else:
-                # its a new time period, flush the old data
+                # this is a new time period, flush the old data
                 print "{} {} {}".format(
                     device['_prev'].timestamp,
                     device['_prev'],
