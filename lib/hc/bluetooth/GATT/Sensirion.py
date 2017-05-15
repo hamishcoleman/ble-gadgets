@@ -125,3 +125,60 @@ class Measurement:
 
         return s
 
+class Device:
+
+    @classmethod
+    def all(cls, bus,prop):
+        """look through the available interfaces for sensirion devices
+            Note that this is pretty yucky, but works for the moment
+        """
+
+        wanted = {
+            '00001235-b38d-4985-720e-0f993a68ee41': 'humidity',
+            '00002235-b38d-4985-720e-0f993a68ee41': 'temperature',
+            '0000f235-b38d-4985-720e-0f993a68ee41': 'settime',
+            '0000f236-b38d-4985-720e-0f993a68ee41': 'mintime',
+            '0000f237-b38d-4985-720e-0f993a68ee41': 'maxtime',
+            '0000f238-b38d-4985-720e-0f993a68ee41': 'sendlog',
+            '0000f239-b38d-4985-720e-0f993a68ee41': 'interval',
+        }
+        devices = {}
+
+        all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
+        for path in all_gatt:
+            object = GATT.Characteristic(bus,prop,path)
+            if object.uuid in wanted:
+                name = wanted[object.uuid]
+                device_path = object.device_path()
+                if device_path not in devices:
+                    devices[device_path] = {}
+                devices[device_path][name] = object
+
+        r = []
+        for d in devices:
+            # ensure that all the required characteristics have been found
+            for char_name in ['humidity','temperature','mintime','maxtime','sendlog','interval']:
+                if char_name not in devices[d]:
+                    raise ValueError
+            r.append(Device(bus, prop, d, devices[d]))
+
+        return r
+
+    def __init__(self, bus, prop, path, char):
+        self.bus = bus
+        self.prop = prop
+        self.path = path
+
+        self._settime = char['settime']
+        del char['settime']
+
+        for char_name in char:
+            setattr(self,char_name,char[char_name])
+
+    # FIXME - is the 'settime' characteristic readable?
+    def settime(self, now=None):
+        if now is None:
+            # the device appears to truncate to seconds, match that here
+            now = int(time.time())
+        return self._settime.write(now)
+

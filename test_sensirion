@@ -10,7 +10,6 @@
 #   the spaghetti
 
 import argparse
-import struct
 import dbus
 
 from dbus.glib import DBusGMainLoop
@@ -132,26 +131,21 @@ def main():
     bus.add_signal_receiver(dump_signal,'PropertiesChanged',
                 path_keyword='path')
 
-    all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
-    for path in all_gatt:
-        object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
-        if object.uuid in wanted:
-            name = wanted[object.uuid]
-            device_path = object.device_path()
-            if device_path not in devices:
-                devices[device_path] = {}
-            devices[device_path][name] = object
+    devs = hc.bluetooth.GATT.Sensirion.Device.all(bus, prop)
 
-    for d in devices:
+    for dev in devs:
+        d = dev.path
+        devices[d] = {}
+
         print '#Found: ',d
         # FIXME - skip devices that are not online!
 
         # the device appears to truncate to seconds internally, match that here
         now = int(time.time())
-        devices[d]['settime'].write(now)
-        devices[d]['_min'] = devices[d]['mintime'].read()
-        devices[d]['_max'] = devices[d]['maxtime'].read()
-        devices[d]['_int'] = devices[d]['interval'].read()
+        dev.settime(now)
+        devices[d]['_min'] = dev.mintime.read()
+        devices[d]['_max'] = dev.maxtime.read()
+        devices[d]['_int'] = dev.interval.read()
         devices[d]['_prev'] = {}
         devices[d]['_hist'] = {}
         devices[d]['_dumping'] = True
@@ -164,9 +158,9 @@ def main():
         timespan = devices[d]['_max']-devices[d]['_min']
         print '# timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
 
-        glib_runonce(devices[d]['humidity'].StartNotify)
-        glib_runonce(devices[d]['temperature'].StartNotify)
-        glib_runonce(devices[d]['sendlog'].write,1)
+        glib_runonce(dev.humidity.StartNotify)
+        glib_runonce(dev.temperature.StartNotify)
+        glib_runonce(dev.sendlog.write,1)
 
     print "\n#start dumping"
     return False
