@@ -32,6 +32,7 @@ sys.path.insert(0,
 
 import hc.dbus.Property
 import hc.bluetooth.GATT
+import hc.bluetooth.GATT.Sensirion
 import time
 
 def dump_history(device_path, hist):

@@ -86,26 +86,6 @@ class TypeHexDump(object):
         return h+' '+s
 
 
-class TypeTimestamp64ms(object):
-    @classmethod
-    def raw2value(cls, raw):
-        return TypeUint64.raw2value(raw) / 1000.0
-
-    @classmethod
-    def value2raw(cls, value):
-        return TypeUint64.value2raw(value*1000)
-
-
-class TypeSensirion32interval(object):
-    @classmethod
-    def raw2value(cls, raw):
-        return TypeUint32.raw2value(raw) / 1000.0
-
-    @classmethod
-    def value2raw(cls, value):
-        return TypeUint32.value2raw(value*1000)
-
-
 class TypePercentUint8(object):
     @classmethod
     def raw2value(cls, raw):
@@ -115,19 +95,6 @@ class TypePercentUint8(object):
     def value2raw(cls, value):
         return TypeUint8.value2raw(value*100)
 
-
-class TypeSensirionFloat32(object):
-    @classmethod
-    def raw2value(cls, raw):
-        if len(raw) == 4:
-            return TypeFloat32.raw2value(raw)
-        r = []
-        r.append(TypeUint32.raw2value(raw[0:4]))
-        del raw[0:4]
-        while len(raw)>3:
-            r.append(TypeFloat32.raw2value(raw[0:4]))
-            del raw[0:4]
-        return r
 
 gatt_list = {
     # Standard things
@@ -167,35 +134,19 @@ gatt_list = {
     '00002a29-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
         'desc': 'manufacturer_name', 'category': 'string',
     },
-
-    # Sensirion SmartGadget
-    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirionFloat32,
-        'desc': 'Humidity', 'category': 'normal',
-    },
-    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirionFloat32,
-        'desc': 'Temperature', 'category': 'normal',
-    },
-    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
-        'desc': 'set_Time', 'category': 'misc',
-    },
-    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
-        'desc': 'log_Min_Time', 'category': 'misc',
-    },
-    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
-        'desc': 'log_Max_Time', 'category': 'misc',
-    },
-    '0000f238-b38d-4985-720e-0f993a68ee41': { 'func': TypeSint8,
-        'desc': 'trigger_send_log', 'category': 'misc',
-    },
-    '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirion32interval,
-        'desc': 'logger_interval', 'category': 'misc',
-    },
 }
 
 
 class Characteristic:
     """Representing a GATT characteristic
     """
+
+    @classmethod
+    def register(cls, list):
+        """Register new GATT characteristic types
+        """
+        gatt_list.update(list)
+
 
     def __init__(self, bus, prop, path):
         # FIXME - there should only be one instance for any path, we should
