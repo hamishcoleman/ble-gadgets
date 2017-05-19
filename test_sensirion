@@ -177,12 +177,20 @@ def main():
         # the device appears to truncate to seconds internally, match that here
         now = int(time.time())
         dev.settime(now)
+        # TODO - settime should return success/fail of trying to write to dev
+
         devices[d]['_min'] = dev.mintime.read()
         devices[d]['_max'] = dev.maxtime.read()
         devices[d]['_int'] = dev.interval.read()
         devices[d]['_prev'] = None
         devices[d]['_hist'] = {}
         devices[d]['_dumping'] = True
+
+        if devices[d]['_min'] is None:
+            print '# not connected'
+            hack_quit.quit()
+            # fix for hack_quit is None, but that is future Hamish's problem
+            return None
 
         print '# settime =',now
         print '# min time=',devices[d]['_min']
