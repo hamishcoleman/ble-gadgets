@@ -153,11 +153,14 @@ class Characteristic:
         # keep a class dictionary and return refs to existing objects
         # if found
 
+        self.signal = None
+        self.callback = None
+
         self.path = path
         self.prop = prop
 
-        proxy = bus.get_object('org.bluez',path)
-        self.char = dbus.Interface(proxy,
+        self.proxy = bus.get_object('org.bluez',path)
+        self.char = dbus.Interface(self.proxy,
                               dbus_interface="org.bluez.GattCharacteristic1")
 
         # properties that will not change
@@ -219,3 +222,33 @@ class Characteristic:
         service_path = self.prop.Get(self.path, 'org.bluez.GattCharacteristic1','Service')
         device_path = self.prop.Get(service_path, 'org.bluez.GattService1','Device')
         return device_path
+
+    def NotifyCallback(self,callback):
+        """Set a callback function that will recieve new values
+        """
+        if callback is None:
+            # clear out our junk
+            self.signal.remove()
+            self.signal = None
+            self.callback = None
+            #self.StopNotify()
+            return
+
+        if self.signal is not None:
+            raise ValueError
+        if self.callback is not None:
+            raise ValueError
+
+        def wrapper(*args,**kwargs):
+            if args[0] != 'org.bluez.GattCharacteristic1':
+                # will this ever happen?
+                raise ValueError
+            if 'Value' not in args[1]:
+                # it will call us with "Notifying=True" (and probably false)
+                return
+            values = self.raw2value(args[1]['Value'])
+            self.callback(self,values)
+
+        self.callback = callback
+        self.signal = self.proxy.connect_to_signal('PropertiesChanged',wrapper)
+        #self.StartNotify()

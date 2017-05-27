@@ -79,12 +79,7 @@ def glib_runonce(func,*args):
     GLib.timeout_add(0,runonce,func,*args)
 
 def main():
-    def dump_signal(*args,**kwargs):
-        # assert args[0] == org.bluez.GattCharacteristic1
-        if 'Value' not in args[1]:
-            return
-
-        object = hc.bluetooth.GATT.Characteristic(bus,prop,kwargs['path'])
+    def dump_signal(object,values):
         device_path = object.device_path()
         device = devices[device_path]
 
@@ -102,8 +97,6 @@ def main():
 
                 if hack_quit is not None:
                     hack_quit.quit()
-
-        values = object.raw2value(args[1]['Value'])
 
         if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
             values.timestamp = now
@@ -162,9 +155,6 @@ def main():
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
 
-    bus.add_signal_receiver(dump_signal,'PropertiesChanged',
-                path_keyword='path')
-
     devs = hc.bluetooth.GATT.Sensirion.Device.all(bus, prop)
 
     for dev in devs:
@@ -199,6 +189,9 @@ def main():
 
         timespan = devices[d]['_max']-devices[d]['_min']
         print '# timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
+
+        dev.humidity.NotifyCallback(dump_signal)
+        dev.temperature.NotifyCallback(dump_signal)
 
         glib_runonce(dev.humidity.StartNotify)
         glib_runonce(dev.temperature.StartNotify)
