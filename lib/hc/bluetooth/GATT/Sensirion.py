@@ -141,6 +141,7 @@ class Device:
             '0000f237-b38d-4985-720e-0f993a68ee41': 'maxtime',
             '0000f238-b38d-4985-720e-0f993a68ee41': 'sendlog',
             '0000f239-b38d-4985-720e-0f993a68ee41': 'interval',
+            '00002a19-0000-1000-8000-00805f9b34fb': 'battery',
         }
         devices = {}
 

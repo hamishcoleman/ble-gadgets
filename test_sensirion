@@ -164,6 +164,7 @@ def main():
             hack_loop.quit()
             return None
 
+        print '# battery =',dev.battery.read()
         print '# settime =',now
         print '# min time=',devices[d]['_min']
         print '# max time=',devices[d]['_max']
