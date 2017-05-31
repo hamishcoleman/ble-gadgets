@@ -42,7 +42,7 @@ def do_fetch(dev):
     # with some kind of edge-case rounding error - but this stops the
     # device mintime and maxtime dancing around as often (it still
     # occasionally moves around)
-    settime = int(now-0.44)
+    settime = int(now-0.42)
 
     dev.settime(settime)
 
