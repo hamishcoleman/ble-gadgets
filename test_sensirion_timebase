@@ -36,7 +36,16 @@ db['prev'] = None
 
 def do_fetch(dev):
     now = time.time()
-    settime = int(now*1000)/1000.0
+    settime = int(now)
+
+    frac = now - int(now)
+    if frac <0.44:
+        # It is unclear what is going on here
+        # I think I am measuring the round-trip-latency and combining that
+        # with some kind of edge-case rounding error - but this stops the
+        # device maxtime dancing around..
+        settime -= 1
+
     dev.settime(settime)
 
     db['this']['now'] = now
