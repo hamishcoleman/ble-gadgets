@@ -32,10 +32,7 @@ def glib_runonce(func,*args):
 
 db = {}
 db['this'] = {}
-db['prev'] = {}
-db['prev']['now'] = 0
-db['prev']['min'] = 0
-db['prev']['max'] = 0
+db['prev'] = None
 
 def do_fetch(dev):
     now = time.time()
@@ -46,15 +43,20 @@ def do_fetch(dev):
     db['this']['max'] = dev.maxtime.read()
     db['this']['bat'] = dev.battery.read()
 
-    print "{:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
-        now,
-        db['this']['max'],
-        db['this']['bat'],
+    if db['prev'] is not None:
+        print "{:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
+            now,
+            db['this']['max'],
+            db['this']['bat'],
 
-        now - db['prev']['now'],
-        now - db['this']['max'],
-        db['this']['max'] - db['prev']['max'],
-    )
+            now - db['prev']['now'],
+            now - db['this']['max'],
+            db['this']['max'] - db['prev']['max'],
+        )
+    else:
+        print "# cache warmup"
+        print "#now max bat delta.now delta.now-max delta.max"
+
     db['prev'] = db['this']
     db['this'] = {}
     return True
