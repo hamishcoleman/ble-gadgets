@@ -193,6 +193,8 @@ class Device:
         self.callbacks_upstream = False
 
         self.prev_value = None
+        self._history = {}
+        self._passnr = 0
 
         self._settime = char['settime']
         del char['settime']
@@ -202,10 +204,7 @@ class Device:
 
     # FIXME - is the 'settime' characteristic readable?
     # TODO - settime should return success/fail of trying to write to dev
-    def settime(self, now=None):
-        if now is None:
-            # the device appears to truncate to seconds, match that here
-            now = int(time.time())
+    def settime(self, now):
         return self._settime.write(now)
 
     def _handleDataRegular(self, characteristic, value):
@@ -231,12 +230,24 @@ class Device:
         self._download_timeout = now + 2
 
         for value in values:
-            self._count += value.complete()
-            self._history[value.index] += value
+            timestamp = self._maxtime - self._interval * (value.index - 1)
+            value.timestamp = timestamp
+            if timestamp not in self._history:
+                self._history[timestamp] = value
+                self._count += value.complete()
+            else:
+                old_complete = self._history[timestamp].complete()
+                self._history[timestamp] += value
+                new_complete = self._history[timestamp].complete()
+                self._count += new_complete - old_complete
 
         if self.callback_download_progress is not None:
-            # object, passnr, count, total
-            self.callback_download_progress(self, None, self._count, self._total)
+            self.callback_download_progress(
+                self,
+                self._passnr,
+                self._count,
+                self._total,
+            )
 
     def _DownloadTimeout(self):
         if self._download_timeout is None:
@@ -314,9 +325,8 @@ class Device:
         self._timespan = self._maxtime - self._mintime
         self._total = int(self._timespan / self._interval) + 1 # FIXME +1?
         self._count = 0
-        self._passnr = 0
+        self._passnr += 1
         self._download_timeout = None
-        self._history = [Measurement() for x in range(self._total)]
 
         GLib.timeout_add_seconds(2, self._DownloadTimeout)
         return True

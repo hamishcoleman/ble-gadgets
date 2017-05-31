@@ -86,6 +86,12 @@ def cb_regular(device, value):
         device.path,
     )
 
+def cb_download(object, values):
+    dump_history(object.path, values)
+
+    if hack_quit is not None:
+        hack_loop.quit()
+
 def cb_download_progress(object, passnr, count, total):
     print "# {}/{} (pass {})".format(
         count, total,
@@ -94,24 +100,6 @@ def cb_download_progress(object, passnr, count, total):
 
 def main():
 
-    def cb_download(object, values):
-        device_path = object.path
-        device = devices[device_path]
-
-        for value in values:
-            if value.complete() == 0:
-                # ignore entries that have no data
-                continue
-
-            timestamp = object._maxtime - object._interval * (value.index - 1)
-            if timestamp not in device['_hist']:
-                device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
-            device['_hist'][timestamp] += value
-
-        dump_history(device_path, device['_hist'])
-
-        if hack_quit is not None:
-            hack_loop.quit()
         # there is something wrong with the max time value
         #if timestamp >= object._maxtime
         #    device['_hist_done'] += 1
@@ -142,8 +130,6 @@ def main():
             print '# not connected'
             hack_loop.quit()
             return None
-
-        devices[d]['_hist'] = {}
 
         print '# battery =',dev.battery.read()
         print '# settime =',dev._settime
