@@ -191,12 +191,15 @@ class Device:
         self.callback_download = None
         self.callback_download_progress = None
         self.callbacks_upstream = False
+        self.callbacks_self = False
 
         self.prev_value = None
         self._history = {}
+        self._mintime = None
+        self._count = 0
         self._passnr = 0
 
-        self._settime = char['settime']
+        self._settime_char = char['settime']
         del char['settime']
 
         for char_name in char:
@@ -205,7 +208,7 @@ class Device:
     # FIXME - is the 'settime' characteristic readable?
     # TODO - settime should return success/fail of trying to write to dev
     def settime(self, now):
-        return self._settime.write(now)
+        return self._settime_char.write(now)
 
     def _handleDataRegular(self, characteristic, value):
         # the device sends notifies once per second, so we should
@@ -244,6 +247,7 @@ class Device:
         if self.callback_download_progress is not None:
             self.callback_download_progress(
                 self,
+                values[0].index,
                 self._passnr,
                 self._count,
                 self._total,
@@ -309,31 +313,56 @@ class Device:
     def DownloadSetup(self):
         """Fetch all the values and do all the calculations for a download
         """
-        # the device appears to truncate to seconds internally, match that here
-        now = int(time.time())
+        # the device appears to truncate to ms internally, match that here
+        now = int(time.time()*1000)/1000.0
         self.settime(now)
         # TODO - check return value once settime has one
 
+        prev_mintime = self._mintime
         self._mintime = self.mintime.read()
         if self._mintime is None:
             # not connected?
             return None
+        if prev_mintime is not None and int(prev_mintime) != int(self._mintime):
+            # the time base moved, our history is now invalid, dont try download
+            print "ERROR: previous mintime {} is not current {}".format(
+                prev_mintime,
+                self._mintime,
+            )
+            return None
 
         self._settime = now
-        self._maxtime = self.maxtime.read()
+        self._maxtime = int(self.maxtime.read()) # FIXME - not an int!
         self._interval = self.interval.read()
         self._timespan = self._maxtime - self._mintime
-        self._total = int(self._timespan / self._interval) + 1 # FIXME +1?
-        self._count = 0
+        self._total = int(self._timespan / self._interval)
         self._passnr += 1
         self._download_timeout = None
 
+        def runonce(func,*args):
+            """A wrapper for the GLib.timeout_add that just runs once
+            """
+            func(*args)
+            return False
+
+        if not self.callbacks_self:
+            GLib.timeout_add_seconds(0, runonce, self.humidity.StartNotify)
+            GLib.timeout_add_seconds(0, runonce, self.temperature.StartNotify)
+            self.callbacks_self = True
+
+        # FIXME - dont add this twice either..
         GLib.timeout_add_seconds(2, self._DownloadTimeout)
         return True
 
-    def DownloadGo():
+    def DownloadGo(self):
         """Actually start the download
         """
 
-        raise ValueError
+        def runonce(func,*args):
+            """A wrapper for the GLib.timeout_add that just runs once
+            """
+            func(*args)
+            return False
+
+        GLib.timeout_add_seconds(0, runonce, self.sendlog.write, 1)
 

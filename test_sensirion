@@ -87,16 +87,44 @@ def cb_regular(device, value):
     )
 
 def cb_download(object, values):
+
+    if object._passnr < 5 and object._count < object._total:
+        print "# try again"
+        do_download(object)
+        return
+
     dump_history(object.path, values)
 
     if hack_quit is not None:
         hack_loop.quit()
 
-def cb_download_progress(object, passnr, count, total):
-    print "# {}/{} (pass {})".format(
+def cb_download_progress(object, index, passnr, count, total):
+    print "# {}/{} (pass {}, index {})".format(
         count, total,
         passnr,
+        index,
     )
+
+def do_download(dev):
+    if not dev.DownloadSetup():
+        print '# not connected'
+        hack_loop.quit()
+        return None
+
+    print '# battery =',dev.battery.read()
+    print '# settime =',dev._settime
+    print '# min time=',dev._mintime
+    print '# max time=',dev._maxtime
+    print '# interval=',dev._interval
+
+    print '# timespan=', dev._timespan, '(total=', dev._total,')'
+
+    dev.RegularCallback(cb_regular)
+    dev.DownloadCallback(cb_download)
+    dev.DownloadProgressCallback(cb_download_progress)
+
+    dev.DownloadGo()
+
 
 def main():
 
@@ -106,8 +134,6 @@ def main():
         #
         #if device['_hist_done'] > 1:
         #    print "Dump", device['_hist']
-
-    devices = {}
 
     bus = dbus.SystemBus()
     prop = hc.dbus.Property.Cache(bus)
@@ -121,31 +147,11 @@ def main():
 
     for dev in devs:
         d = dev.path
-        devices[d] = {}
 
         print '#Found: ',d
         # FIXME - skip devices that are not online!
 
-        if not dev.DownloadSetup():
-            print '# not connected'
-            hack_loop.quit()
-            return None
-
-        print '# battery =',dev.battery.read()
-        print '# settime =',dev._settime
-        print '# min time=',dev._mintime
-        print '# max time=',dev._maxtime
-        print '# interval=',dev._interval
-
-        print '# timespan=', dev._timespan, '(total=', dev._total,')'
-
-        dev.RegularCallback(cb_regular)
-        dev.DownloadCallback(cb_download)
-        dev.DownloadProgressCallback(cb_download_progress)
-
-        glib_runonce(dev.humidity.StartNotify)
-        glib_runonce(dev.temperature.StartNotify)
-        glib_runonce(dev.sendlog.write,1)
+        do_download(dev)
 
     print "\n#start dumping"
     return False
