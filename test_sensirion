@@ -80,8 +80,8 @@ def glib_runonce(func,*args):
     GLib.timeout_add(0,runonce,func,*args)
 
 def main():
-    def dump_signal(object,values):
-        device_path = object.device_path()
+    def check_download_timeout(object):
+        device_path = object.path
         device = devices[device_path]
 
         # the device sends notifies once per second, so we should bucket our
@@ -99,41 +99,27 @@ def main():
                 if hack_quit is not None:
                     hack_loop.quit()
 
-        if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
-            values.timestamp = now
-            if device['_prev'] is None:
-                # first data
-                device['_prev'] = values
-                return
-            elif device['_prev'].timestamp == now:
-                # just merge this new report with the existing measurement
-                device['_prev'] += values
-                return
-            else:
-                # this is a new time period, flush the old data
-                print "{} {} {}".format(
-                    device['_prev'].timestamp,
-                    device['_prev'],
-                    object.device_path()
-                )
+    def cb_regular(device, value):
+        check_download_timeout(device)
 
-                # save the new data
-                device['_prev'] = values
-                return
+        print "{} {} {}".format(
+            value.timestamp,
+            value,
+            device.path,
+        )
 
-        if type(values) != type(list()):
-            print "#", now, object.desc, values, object.device_path()
-            return
+    def cb_download(object, value):
+        device_path = object.path
+        device = devices[device_path]
 
         device['_dump_timeout'] = now+2
-        index = values[0].index
-        print "#", now, '@', index, object.desc, object.device_path()
-        for v in values:
-            index = v.index
-            timestamp = device['_max'] - device['_int']*(index-1)
-            if timestamp not in device['_hist']:
-                device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
-            device['_hist'][timestamp] += v
+        index = value.index
+        print "#", now, '@', index
+
+        timestamp = device['_max'] - device['_int']*(index-1)
+        if timestamp not in device['_hist']:
+            device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
+        device['_hist'][timestamp] += value
 
         # there is something wrong with the max time value
         #if timestamp >= device['_max']:
@@ -186,8 +172,8 @@ def main():
         timespan = devices[d]['_max']-devices[d]['_min']
         print '# timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
 
-        dev.humidity.NotifyCallback(dump_signal)
-        dev.temperature.NotifyCallback(dump_signal)
+        dev.RegularCallback(cb_regular)
+        dev.DownloadCallback(cb_download)
 
         glib_runonce(dev.humidity.StartNotify)
         glib_runonce(dev.temperature.StartNotify)

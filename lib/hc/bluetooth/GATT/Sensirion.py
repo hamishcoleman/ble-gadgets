@@ -1,6 +1,6 @@
 
 import hc.bluetooth.GATT as GATT
-
+import time
 
 class TypeMeasurement(object):
     @classmethod
@@ -169,6 +169,12 @@ class Device:
         self.prop = prop
         self.path = path
 
+        self.callback_regular = None
+        self.callback_download = None
+        self.callbacks_upstream = False
+
+        self.prev_value = None
+
         self._settime = char['settime']
         del char['settime']
 
@@ -181,4 +187,65 @@ class Device:
             # the device appears to truncate to seconds, match that here
             now = int(time.time())
         return self._settime.write(now)
+
+    def _handleDataRegular(self, characteristic, value):
+        # the device sends notifies once per second, so we should
+        # bucket our data with that in mind - round time to 1/10 of
+        # a second
+        now = int(time.time()*10)/10.0
+        value.timestamp = now
+
+        if self.prev_value is None:
+            # first data
+            self.prev_value = value
+        if self.prev_value.timestamp == now:
+            # this is new data to merge with the existing sample
+            self.prev_value += value
+        else:
+            # this is a new time period, flush the old data
+            self.callback_regular(self,self.prev_value)
+            self.prev_value = value
+
+    def _handleDataDownload(self, characteristic, values):
+        for value in values:
+            self.callback_download(self,value)
+
+    def _handleData(self, characteristic, values):
+        # single item values time-based regular notifies (and not downloads)
+        if type(values) != type(list()):
+            return self._handleDataRegular(characteristic, values)
+
+        # this must be a download
+        return self._handleDataDownload(characteristic, values)
+
+    def _setup_callbacks(self):
+        if self.callback_regular is None and self.callback_download is None:
+            # neither callback type is registered, remove upstream callbacks
+            self.humidity.NotifyCallback(None)
+            self.temperature.NotifyCallback(None)
+            self.callbacks_upstream = False
+            return
+
+        if self.callbacks_upstream:
+            # we have already registered
+            return
+
+        def wrapper(characteristic,values):
+            self._handleData(characteristic,values)
+
+        self.humidity.NotifyCallback(wrapper)
+        self.temperature.NotifyCallback(wrapper)
+        self.callbacks_upstream = True
+
+    def RegularCallback(self, cb):
+        """Register a callback for regular per-second updates
+        """
+        self.callback_regular = cb
+        self._setup_callbacks()
+
+    def DownloadCallback(self, cb):
+        """Register a callback for download data
+        """
+        self.callback_download = cb
+        self._setup_callbacks()
 
