@@ -19,6 +19,7 @@ import os
 import sys
 
 # ungh - a hacky global var
+hack_loop = None
 hack_quit = None
 
 # Ensure that we look for any modules in our local lib dir.  This allows simple
@@ -96,7 +97,7 @@ def main():
                 device['_dumping'] = False
 
                 if hack_quit is not None:
-                    hack_quit.quit()
+                    hack_loop.quit()
 
         if type(values) == type(hc.bluetooth.GATT.Sensirion.Measurement()):
             values.timestamp = now
@@ -148,6 +149,11 @@ def main():
 
     devs = hc.bluetooth.GATT.Sensirion.Device.all(bus, prop)
 
+    if not devs:
+        print '# no devices found'
+        hack_loop.quit()
+        return None
+
     for dev in devs:
         d = dev.path
         devices[d] = {}
@@ -169,8 +175,7 @@ def main():
 
         if devices[d]['_min'] is None:
             print '# not connected'
-            hack_quit.quit()
-            # fix for hack_quit is None, but that is future Hamish's problem
+            hack_loop.quit()
             return None
 
         print '# settime =',now
@@ -207,7 +212,8 @@ if __name__ == '__main__':
     DBusGMainLoop (set_as_default=True)
     glib_runonce(main)
     loop = GLib.MainLoop()
+    hack_loop = loop
     if args.downloadonly:
-        hack_quit = loop
+        hack_quit = True
     loop.run()
 
