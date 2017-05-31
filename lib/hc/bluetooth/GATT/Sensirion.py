@@ -196,6 +196,7 @@ class Device:
         self.prev_value = None
         self._history = {}
         self._mintime = None
+        self._maxtime = None
         self._count = 0
         self._passnr = 0
 
@@ -230,7 +231,7 @@ class Device:
 
     def _handleDataDownload(self, characteristic, values):
         now = time.time()
-        self._download_timeout = now + 2
+        self._download_timeout = now + 1
 
         for value in values:
             timestamp = self._maxtime - self._interval * (value.index - 1)
@@ -313,31 +314,71 @@ class Device:
     def DownloadSetup(self):
         """Fetch all the values and do all the calculations for a download
         """
-        # the device appears to truncate to ms internally, match that here
-        now = int(time.time()*1000)/1000.0
+        # The device appears to truncate the time internally to 1ms, but it
+        # also appears to store the data history with only 1s resolution.  So
+        # we use the int() here.
+        # Additionally, there appears to be a latency or rounding error, so
+        # we subtract the magic number as well (see test_sensirion_timebase
+        # for testing on this)
+        now = time.time()
+        now = int(time.time()-0.42)
         self.settime(now)
         # TODO - check return value once settime has one
 
+        # Note:
+        # We actually only care about the value of maxtime, but the device has
+        # a curious corner case when doing its sample update:
+        # - First, it increases the maxtime /and/ the mintime by interval
+        # - Then, it corrects the mintime backwards by interval
+        # I can only assume what the data would look like during this dump, but
+        # we can error out by checking the mintime value
+
         prev_mintime = self._mintime
+        prev_maxtime = self._maxtime
+
         self._mintime = self.mintime.read()
+
         if self._mintime is None:
             # not connected?
             return None
-        if prev_mintime is not None and int(prev_mintime) != int(self._mintime):
-            # the time base moved, our history is now invalid, dont try download
-            print "ERROR: previous mintime {} is not current {}".format(
-                prev_mintime,
-                self._mintime,
-            )
-            return None
 
         self._settime = now
-        self._maxtime = int(self.maxtime.read()) # FIXME - not an int!
+        self._maxtime = self.maxtime.read()
         self._interval = self.interval.read()
         self._timespan = self._maxtime - self._mintime
         self._total = int(self._timespan / self._interval)
         self._passnr += 1
         self._download_timeout = None
+
+        if prev_mintime is not None:
+            # This is not the first pass through the download
+            delta_mintime = prev_mintime - self._mintime
+
+            if abs(delta_mintime) > (self._interval / 2):
+                # the time base moved, our history is now invalid, so dont
+                # try any downloads
+                # FIXME - this should be a recoverable error
+                print "ERROR: previous mintime {} is not current {}".format(
+                    prev_mintime,
+                    self._mintime,
+                )
+                return None
+
+        if prev_maxtime is not None:
+            # This is not the first pass through the download
+            delta_maxtime = prev_maxtime - self._maxtime
+
+            if abs(delta_maxtime) > (self._interval / 2):
+                # the time base moved
+                # FIXME - this should be a recoverable error
+                print "ERROR: previous maxtime {} is not current {}".format(
+                    prev_maxtime,
+                    self._maxtime,
+                )
+                return None
+
+            # Keep the timebase comparable, using force
+            self._maxtime = prev_maxtime
 
         def runonce(func,*args):
             """A wrapper for the GLib.timeout_add that just runs once
