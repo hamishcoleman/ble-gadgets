@@ -36,7 +36,8 @@ db['prev'] = None
 
 def do_fetch(dev):
     now = time.time()
-    dev.settime(now)
+    settime = int(now*1000)/1000.0
+    dev.settime(settime)
 
     db['this']['now'] = now
     #db['this']['min'] = dev.mintime.read()
@@ -44,8 +45,9 @@ def do_fetch(dev):
     db['this']['bat'] = dev.battery.read()
 
     if db['prev'] is not None:
-        print "{:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
+        print "{:.6f} {:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
             now,
+            settime,
             db['this']['max'],
             db['this']['bat'],
 
@@ -55,7 +57,7 @@ def do_fetch(dev):
         )
     else:
         print "# cache warmup"
-        print "#now max bat delta.now delta.now-max delta.max"
+        print "#now settime max bat delta.now delta.now-max delta.max"
 
     db['prev'] = db['this']
     db['this'] = {}
