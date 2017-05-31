@@ -79,50 +79,41 @@ def glib_runonce(func,*args):
         return False
     GLib.timeout_add(0,runonce,func,*args)
 
+def cb_regular(device, value):
+    print "{} {} {}".format(
+        value.timestamp,
+        value,
+        device.path,
+    )
+
+def cb_download_progress(object, passnr, count, total):
+    print "# {}/{} (pass {})".format(
+        count, total,
+        passnr,
+    )
+
 def main():
-    def check_download_timeout(object):
+
+    def cb_download(object, values):
         device_path = object.path
         device = devices[device_path]
 
-        # the device sends notifies once per second, so we should bucket our
-        # data with that in mind - round time to 1/10 of a second
-        now = int(time.time()*10)/10.0
+        for value in values:
+            if value.complete() == 0:
+                # ignore entries that have no data
+                continue
 
-        # FIXME - timeout should be in its own task
-        if device['_dumping']:
-            if '_dump_timeout' in device and now > device['_dump_timeout']:
-                # timed out waiting for the next log dump packet
-                print "# timeout was",device['_dump_timeout']
-                dump_history(device_path, device['_hist'])
-                device['_dumping'] = False
+            timestamp = object._maxtime - object._interval * (value.index - 1)
+            if timestamp not in device['_hist']:
+                device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
+            device['_hist'][timestamp] += value
 
-                if hack_quit is not None:
-                    hack_loop.quit()
+        dump_history(device_path, device['_hist'])
 
-    def cb_regular(device, value):
-        check_download_timeout(device)
-
-        print "{} {} {}".format(
-            value.timestamp,
-            value,
-            device.path,
-        )
-
-    def cb_download(object, value):
-        device_path = object.path
-        device = devices[device_path]
-
-        device['_dump_timeout'] = now+2
-        index = value.index
-        print "#", now, '@', index
-
-        timestamp = device['_max'] - device['_int']*(index-1)
-        if timestamp not in device['_hist']:
-            device['_hist'][timestamp] = hc.bluetooth.GATT.Sensirion.Measurement()
-        device['_hist'][timestamp] += value
-
+        if hack_quit is not None:
+            hack_loop.quit()
         # there is something wrong with the max time value
-        #if timestamp >= device['_max']:
+        #if timestamp >= object._maxtime
         #    device['_hist_done'] += 1
         #
         #if device['_hist_done'] > 1:
@@ -147,34 +138,24 @@ def main():
         print '#Found: ',d
         # FIXME - skip devices that are not online!
 
-        # the device appears to truncate to seconds internally, match that here
-        now = int(time.time())
-        dev.settime(now)
-        # TODO - settime should return success/fail of trying to write to dev
-
-        devices[d]['_min'] = dev.mintime.read()
-        devices[d]['_max'] = dev.maxtime.read()
-        devices[d]['_int'] = dev.interval.read()
-        devices[d]['_prev'] = None
-        devices[d]['_hist'] = {}
-        devices[d]['_dumping'] = True
-
-        if devices[d]['_min'] is None:
+        if not dev.DownloadSetup():
             print '# not connected'
             hack_loop.quit()
             return None
 
-        print '# battery =',dev.battery.read()
-        print '# settime =',now
-        print '# min time=',devices[d]['_min']
-        print '# max time=',devices[d]['_max']
-        print '# interval=',devices[d]['_int']
+        devices[d]['_hist'] = {}
 
-        timespan = devices[d]['_max']-devices[d]['_min']
-        print '# timespan=', timespan, '(count=', timespan/devices[d]['_int'],')'
+        print '# battery =',dev.battery.read()
+        print '# settime =',dev._settime
+        print '# min time=',dev._mintime
+        print '# max time=',dev._maxtime
+        print '# interval=',dev._interval
+
+        print '# timespan=', dev._timespan, '(total=', dev._total,')'
 
         dev.RegularCallback(cb_regular)
         dev.DownloadCallback(cb_download)
+        dev.DownloadProgressCallback(cb_download_progress)
 
         glib_runonce(dev.humidity.StartNotify)
         glib_runonce(dev.temperature.StartNotify)

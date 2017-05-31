@@ -1,6 +1,8 @@
 
-import hc.bluetooth.GATT as GATT
+from gi.repository import GLib
 import time
+
+import hc.bluetooth.GATT as GATT
 
 class TypeMeasurement(object):
     @classmethod
@@ -92,6 +94,8 @@ class Measurement:
         self.humidity = None
 
     def __add__(self, value):
+        """Merge this measurement with another one, taking only new values
+        """
         if not isinstance(value, Measurement):
             raise TypeError
 
@@ -124,6 +128,19 @@ class Measurement:
             s += "\N"
 
         return s
+
+    def complete(self):
+        """Is this measurement complete?
+        """
+        if self.temperature is None and self.humidity is None:
+            # nothing complete
+            return 0
+        if self.temperature is not None and self.humidity is not None:
+            # everything complete
+            return 1
+
+        # otherwise, partially complete
+        return 0.5
 
 class Device:
 
@@ -172,6 +189,7 @@ class Device:
 
         self.callback_regular = None
         self.callback_download = None
+        self.callback_download_progress = None
         self.callbacks_upstream = False
 
         self.prev_value = None
@@ -183,6 +201,7 @@ class Device:
             setattr(self,char_name,char[char_name])
 
     # FIXME - is the 'settime' characteristic readable?
+    # TODO - settime should return success/fail of trying to write to dev
     def settime(self, now=None):
         if now is None:
             # the device appears to truncate to seconds, match that here
@@ -208,8 +227,32 @@ class Device:
             self.prev_value = value
 
     def _handleDataDownload(self, characteristic, values):
+        now = time.time()
+        self._download_timeout = now + 2
+
         for value in values:
-            self.callback_download(self,value)
+            self._count += value.complete()
+            self._history[value.index] += value
+
+        if self.callback_download_progress is not None:
+            # object, passnr, count, total
+            self.callback_download_progress(self, None, self._count, self._total)
+
+    def _DownloadTimeout(self):
+        if self._download_timeout is None:
+            # download has not started, do nothing
+            return True
+
+        now = time.time()
+        if now < self._download_timeout:
+            # timeout time has not arrived, do nothing
+            return True
+
+        # if we get here, the download has started, but not progressed
+        # recently
+
+        self.callback_download(self,self._history)
+        return False
 
     def _handleData(self, characteristic, values):
         # single item values time-based regular notifies (and not downloads)
@@ -231,11 +274,8 @@ class Device:
             # we have already registered
             return
 
-        def wrapper(characteristic,values):
-            self._handleData(characteristic,values)
-
-        self.humidity.NotifyCallback(wrapper)
-        self.temperature.NotifyCallback(wrapper)
+        self.humidity.NotifyCallback(self._handleData)
+        self.temperature.NotifyCallback(self._handleData)
         self.callbacks_upstream = True
 
     def RegularCallback(self, cb):
@@ -249,4 +289,41 @@ class Device:
         """
         self.callback_download = cb
         self._setup_callbacks()
+
+    def DownloadProgressCallback(self, cb):
+        """Register a callback getting status on the download in progress
+        """
+        self.callback_download_progress = cb
+
+    def DownloadSetup(self):
+        """Fetch all the values and do all the calculations for a download
+        """
+        # the device appears to truncate to seconds internally, match that here
+        now = int(time.time())
+        self.settime(now)
+        # TODO - check return value once settime has one
+
+        self._mintime = self.mintime.read()
+        if self._mintime is None:
+            # not connected?
+            return None
+
+        self._settime = now
+        self._maxtime = self.maxtime.read()
+        self._interval = self.interval.read()
+        self._timespan = self._maxtime - self._mintime
+        self._total = int(self._timespan / self._interval) + 1 # FIXME +1?
+        self._count = 0
+        self._passnr = 0
+        self._download_timeout = None
+        self._history = [Measurement() for x in range(self._total)]
+
+        GLib.timeout_add_seconds(2, self._DownloadTimeout)
+        return True
+
+    def DownloadGo():
+        """Actually start the download
+        """
+
+        raise ValueError
 
