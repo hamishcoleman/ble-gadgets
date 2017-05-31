@@ -141,15 +141,6 @@ def main():
         #if device['_hist_done'] > 1:
         #    print "Dump", device['_hist']
 
-    wanted = {
-        '00001235-b38d-4985-720e-0f993a68ee41': 'humidity',
-        '00002235-b38d-4985-720e-0f993a68ee41': 'temperature',
-        '0000f235-b38d-4985-720e-0f993a68ee41': 'settime',
-        '0000f236-b38d-4985-720e-0f993a68ee41': 'mintime',
-        '0000f237-b38d-4985-720e-0f993a68ee41': 'maxtime',
-        '0000f238-b38d-4985-720e-0f993a68ee41': 'sendlog',
-        '0000f239-b38d-4985-720e-0f993a68ee41': 'interval',
-    }
     devices = {}
 
     bus = dbus.SystemBus()
