@@ -61,10 +61,9 @@ def dump_history(device_path, hist):
                 if this.temperature is not None and this.humidity is not None:
                     print "# Missing part data\n"
 
-        print "{} {} {}".format(
+        print "{} {}".format(
             timestamp,
             this,
-            this.index,
         )
 
         prev = next
