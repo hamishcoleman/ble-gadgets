@@ -98,9 +98,11 @@ def cb_download(object, values):
         hack_loop.quit()
 
 def cb_download_progress(object, index, passnr, count, total):
-    print "# {}/{} (pass {}, index {})".format(
+    print "# {:.1f}% ({}/{}) (pass {} {:.1f}% - {})".format(
+        count/total*100,
         count, total,
         passnr,
+        float(index)/total*100,
         index,
     )
 
