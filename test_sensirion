@@ -109,6 +109,12 @@ def cb_download_progress(object, index, passnr, count, total):
 def do_download(dev):
     if not dev.DownloadSetup():
         print '# not connected'
+
+        # dump out what we do have, if anything
+        # FIXME - digging around in the object's internals
+        if dev._passnr:
+            dump_history(dev.path, dev._history)
+
         hack_loop.quit()
         return None
 
