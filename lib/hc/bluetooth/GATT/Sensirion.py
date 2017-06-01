@@ -199,6 +199,7 @@ class Device:
         self._maxtime = None
         self._count = 0
         self._passnr = 0
+        self._index = 0
 
         self._settime_char = char['settime']
         del char['settime']
@@ -233,31 +234,36 @@ class Device:
         now = time.time()
         self._download_timeout = now + 1
 
+        count_add = 0
         for value in values:
             timestamp = self._maxtime - self._interval * (value.index - 1)
             value.timestamp = timestamp
             if timestamp not in self._history:
                 self._history[timestamp] = value
-                self._count += value.complete()
+                count_add += value.complete()
             else:
                 old_complete = self._history[timestamp].complete()
                 self._history[timestamp] += value
                 new_complete = self._history[timestamp].complete()
-                self._count += new_complete - old_complete
+                count_add += new_complete - old_complete
 
-        if self.callback_download_progress is not None:
-            self.callback_download_progress(
-                self,
-                values[0].index,
-                self._passnr,
-                self._count,
-                self._total,
-            )
+        self._count += count_add
+        self._index = values[0].index
 
     def _DownloadTimeout(self):
         if self._download_timeout is None:
             # download has not started, do nothing
             return True
+
+        if self.callback_download_progress is not None:
+            # send a progress report
+            self.callback_download_progress(
+                self,
+                self._index,
+                self._passnr,
+                self._count,
+                self._total,
+            )
 
         now = time.time()
         if now < self._download_timeout:
@@ -392,7 +398,7 @@ class Device:
             self.callbacks_self = True
 
         # FIXME - dont add this twice either..
-        GLib.timeout_add_seconds(2, self._DownloadTimeout)
+        GLib.timeout_add_seconds(1, self._DownloadTimeout)
         return True
 
     def DownloadGo(self):
