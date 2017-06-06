@@ -210,14 +210,6 @@ class Device:
     # Ideally, settime would return success/fail of trying to write to
     # the dev - the bluez interface does that by raising exceptions
     def settime(self, now=None):
-        # to ensure we get current values, invalidate the cache
-        self.maxtime.cache_invalidate()
-        maxtime = self.maxtime.cache_read()
-
-        if maxtime != 0:
-            # the device already thinks it knows the time,
-            return None
-
         if now is None:
             # The device appears to truncate the time internally to 1ms,
             # but it also appears to store the data history with only
@@ -343,9 +335,6 @@ class Device:
     def DownloadSetup(self):
         """Fetch all the values and do all the calculations for a download
         """
-        now = self.settime()
-        # TODO - check return value for errors?
-
         # Note:
         # We actually only care about the value of maxtime, but the device has
         # a curious corner case when doing its sample update:

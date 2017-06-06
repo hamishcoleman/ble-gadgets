@@ -107,6 +107,8 @@ def cb_download_progress(object, index, passnr, count, total):
     )
 
 def do_download(dev):
+
+    dev.settime()
     if not dev.DownloadSetup():
         print '# not connected'
 
