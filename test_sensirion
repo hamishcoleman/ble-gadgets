@@ -108,8 +108,8 @@ def cb_download_progress(object, index, passnr, count, total):
 
 def do_download(dev):
 
-    dev.settime()
-    if not dev.DownloadSetup():
+    battery = dev.battery.read()
+    if battery is None:
         print '# not connected'
 
         # dump out what we do have, if anything
@@ -119,10 +119,10 @@ def do_download(dev):
 
         hack_loop.quit()
         return None
+    print '# battery =',battery
 
-    print '# battery =',dev.battery.read()
-    print '# settime =',dev._settime
-    print '# min time=',dev._mintime
+    dev.DownloadSetup()
+    print '# min time=',dev.mintime.cache_read()
     print '# max time=',dev._maxtime
     print '# interval=',dev._interval
 
@@ -159,6 +159,9 @@ def main():
 
         print '#Found: ',d
         # FIXME - skip devices that are not online!
+
+        now = dev.settime()
+        print '# settime =',now
 
         do_download(dev)
 
