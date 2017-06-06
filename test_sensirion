@@ -52,13 +52,13 @@ def dump_history(device_path, hist):
                 missing_completely += missing
                 print "\n# Missing {} datapoints".format(missing)
                 next = None
-            elif this.temperature is None or this.humidity is None:
+            elif this.complete() < 1:
                 # we are missing part of this sample
                 missing_part += 1
 
-            if prev.temperature is None or prev.humidity is None:
+            if prev.complete() < 1:
                 # see if we need a break - after a string of missing data
-                if this.temperature is not None and this.humidity is not None:
+                if this.complete() == 1:
                     print "# Missing part data\n"
 
         print "{} {}".format(
