@@ -207,10 +207,33 @@ class Device:
         for char_name in char:
             setattr(self,char_name,char[char_name])
 
-    # FIXME - is the 'settime' characteristic readable?
-    # TODO - settime should return success/fail of trying to write to dev
-    def settime(self, now):
-        return self._settime_char.write(now)
+    # Ideally, settime would return success/fail of trying to write to
+    # the dev - the bluez interface does that by raising exceptions
+    def settime(self, now=None):
+        # to ensure we get current values, invalidate the cache
+        self.maxtime.cache_invalidate()
+        maxtime = self.maxtime.cache_read()
+
+        if maxtime != 0:
+            # the device already thinks it knows the time,
+            return None
+
+        if now is None:
+            # The device appears to truncate the time internally to 1ms,
+            # but it also appears to store the data history with only
+            # 1s resolution.  So we use the int() here.
+            # Additionally, there appears to be a latency or rounding error, so
+            # we subtract the magic number as well (see test_sensirion_timebase
+            # for testing on this)
+            now = time.time()
+            now = int(now-0.42)
+
+        # since the min and max will change again after setting the time,
+        # invalidate the cache
+        self.mintime.cache_invalidate()
+        self.maxtime.cache_invalidate()
+        self._settime_char.write(now)
+        return now
 
     def _handleDataRegular(self, characteristic, value):
         # the device sends notifies once per second, so we should
@@ -320,16 +343,8 @@ class Device:
     def DownloadSetup(self):
         """Fetch all the values and do all the calculations for a download
         """
-        # The device appears to truncate the time internally to 1ms, but it
-        # also appears to store the data history with only 1s resolution.  So
-        # we use the int() here.
-        # Additionally, there appears to be a latency or rounding error, so
-        # we subtract the magic number as well (see test_sensirion_timebase
-        # for testing on this)
-        now = time.time()
-        now = int(time.time()-0.42)
-        self.settime(now)
-        # TODO - check return value once settime has one
+        now = self.settime()
+        # TODO - check return value for errors?
 
         # Note:
         # We actually only care about the value of maxtime, but the device has
@@ -342,15 +357,15 @@ class Device:
         prev_mintime = self._mintime
         prev_maxtime = self._maxtime
 
-        self._mintime = self.mintime.read()
+        self._mintime = self.mintime.cache_read()
 
         if self._mintime is None:
             # not connected?
             return None
 
         self._settime = now
-        self._maxtime = self.maxtime.read()
-        self._interval = self.interval.read()
+        self._maxtime = self.maxtime.cache_read()
+        self._interval = self.interval.cache_read()
         self._timespan = self._maxtime - self._mintime
         self._total = int(self._timespan / self._interval)
         self._passnr += 1

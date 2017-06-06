@@ -153,6 +153,7 @@ class Characteristic:
         # keep a class dictionary and return refs to existing objects
         # if found
 
+        self.cache = None
         self.signal = None
         self.callback = None
 
@@ -201,6 +202,7 @@ class Characteristic:
         return self.raw2value(raw)
 
     def write(self,value):
+        self.cache_invalidate()
         try:
             raw = self.value2raw(value)
             result = self.char.WriteValue(raw,{'none':0})
@@ -209,6 +211,14 @@ class Characteristic:
             self.exception = e
             return None
         return result
+
+    def cache_invalidate(self):
+        self.cache = None
+
+    def cache_read(self):
+        if self.cache is None:
+            self.cache = self.read()
+        return self.cache
 
     def StartNotify(self):
         return self.char.StartNotify()
