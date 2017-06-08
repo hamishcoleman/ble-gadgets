@@ -192,7 +192,11 @@ class Characteristic:
         """
         return self.entry['func'].value2raw(value)
 
+#
+# TODO - why am I messing around with catching the exceptions here?
+
     def read(self):
+        self.exception = None
         try:
             raw = self.char.ReadValue({'none': 0})
         except dbus.exceptions.DBusException as e:
@@ -203,6 +207,7 @@ class Characteristic:
 
     def write(self,value):
         self.cache_invalidate()
+        self.exception = None
         try:
             raw = self.value2raw(value)
             result = self.char.WriteValue(raw,{'none':0})
