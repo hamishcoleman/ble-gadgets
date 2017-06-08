@@ -105,9 +105,10 @@ def cb_download_progress(object, index, passnr, count, total):
         float(index)/total*100,
         index,
     )
+    # FIXME - this callback should be told the passtotal
 
-def do_download(dev):
-
+def do_download(dev, mintime=None, maxtime=None):
+    now = time.time()
     battery = dev.battery.read()
     if battery is None:
         print '# not connected'
@@ -119,14 +120,12 @@ def do_download(dev):
 
         hack_loop.quit()
         return None
-    print '# battery =',battery
+    print '#',now,'battery',battery
 
-    dev.DownloadSetup()
-    print '# min time=',dev.mintime.cache_read()
-    print '# max time=',dev._maxtime
+    dev.DownloadSetup(mintime, maxtime)
+    print '# download',dev._mintime,'-',dev._maxtime
     print '# interval=',dev._interval
-
-    print '# timespan=', dev._timespan, '(total=', dev._total,')'
+    print '# timespan=', dev._timespan, '(total=', dev._total,'passtotal=', dev._passtotal,')'
 
     dev.RegularCallback(cb_regular)
     dev.DownloadCallback(cb_download)
@@ -161,7 +160,7 @@ def main():
         # FIXME - skip devices that are not online!
 
         now = dev.settime()
-        print '# settime =',now
+        print '#',now,'settime'
 
         do_download(dev)
 

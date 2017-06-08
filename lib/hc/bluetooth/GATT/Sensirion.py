@@ -197,6 +197,8 @@ class Device:
         self._history = {}
         self._mintime = None
         self._maxtime = None
+        self._total = None
+        self._passtotal = 0
         self._count = 0
         self._passnr = 0
         self._index = 0
@@ -332,7 +334,7 @@ class Device:
         """
         self.callback_download_progress = cb
 
-    def DownloadSetup(self):
+    def DownloadSetup(self, min=None, max=None):
         """Fetch all the values and do all the calculations for a download
         """
         # Note:
@@ -341,54 +343,33 @@ class Device:
         # - First, it increases the maxtime /and/ the mintime by interval
         # - Then, it corrects the mintime backwards by interval
         # I can only assume what the data would look like during this dump, but
-        # we can error out by checking the mintime value
+        # we can try to avoid it by setting our own min and max
 
-        prev_mintime = self._mintime
-        prev_maxtime = self._maxtime
+        if max is None:
+            self._maxtime = self.maxtime.cache_read()
+        else:
+            self.maxtime.write(max)
+            self._maxtime = max
 
-        self._mintime = self.mintime.cache_read()
-
-        if self._mintime is None:
+        if self._maxtime is None:
             # not connected?
             return None
 
-        self._settime = now
-        self._maxtime = self.maxtime.cache_read()
+        if min is None:
+            self._mintime = self.mintime.cache_read()
+        else:
+            self.mintime.write(min)
+            self._mintime = min
+
         self._interval = self.interval.cache_read()
         self._timespan = self._maxtime - self._mintime
-        self._total = int(self._timespan / self._interval)
+        self._passtotal = int(self._timespan / self._interval)
+        if (min is None and max is None) or (self._total is None):
+            # _total is how many measurements are in the archive
+            # _passtotal is how many measurements we want to download this time
+            self._total = self._passtotal
         self._passnr += 1
         self._download_timeout = None
-
-        if prev_mintime is not None:
-            # This is not the first pass through the download
-            delta_mintime = prev_mintime - self._mintime
-
-            if abs(delta_mintime) > (self._interval / 2):
-                # the time base moved, our history is now invalid, so dont
-                # try any downloads
-                # FIXME - this should be a recoverable error
-                print "ERROR: previous mintime {} is not current {}".format(
-                    prev_mintime,
-                    self._mintime,
-                )
-                return None
-
-        if prev_maxtime is not None:
-            # This is not the first pass through the download
-            delta_maxtime = prev_maxtime - self._maxtime
-
-            if abs(delta_maxtime) > (self._interval / 2):
-                # the time base moved
-                # FIXME - this should be a recoverable error
-                print "ERROR: previous maxtime {} is not current {}".format(
-                    prev_maxtime,
-                    self._maxtime,
-                )
-                return None
-
-            # Keep the timebase comparable, using force
-            self._maxtime = prev_maxtime
 
         def runonce(func,*args):
             """A wrapper for the GLib.timeout_add that just runs once
