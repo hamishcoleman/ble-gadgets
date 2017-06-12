@@ -372,6 +372,14 @@ class Device:
         self._passnr += 1
         self._download_timeout = None
 
+        # ensure that all expected history points exist (allowing for much
+        # simple checking for missing points
+        timestamp = self._mintime
+        while timestamp <= self._maxtime:
+            if timestamp not in self._history:
+                self._history[timestamp] = Measurement()
+            timestamp += self._interval
+
         def runonce(func,*args):
             """A wrapper for the GLib.timeout_add that just runs once
             """

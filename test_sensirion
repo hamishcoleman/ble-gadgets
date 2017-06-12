@@ -40,37 +40,25 @@ def dump_history(device_path, hist):
     print "#Log for",device_path
     print "#timestamp temperature humidity index"
 
-    missing_completely = 0
-    missing_part = 0
+    missing = 0
     prev = None
     for timestamp in sorted(hist.keys()):
         this = hist[timestamp]
-        next = this
-        if prev is not None:
-            if prev.index-1 != this.index:
-                missing = prev.index-1 - this.index
-                missing_completely += missing
-                print "\n# Missing {} datapoints".format(missing)
-                next = None
-            elif this.complete() < 1:
-                # we are missing part of this sample
-                missing_part += 1
+        missing += 1 - this.complete()
 
-            if prev.complete() < 1:
-                # see if we need a break - after a string of missing data
-                if this.complete() == 1:
-                    print "# Missing part data\n"
+        if prev is not None:
+            if prev.complete() < 1 and this.complete() == 1:
+                # see if we need a break - after missing datapoints
+                print "# Missing datapoints\n"
 
         print "{} {}".format(
             timestamp,
             this,
         )
 
-        prev = next
+        prev = this
 
-    print "\n# Missing {} datapoint pairs total".format(missing_completely)
-    print "# Missing {} partial datapoints total".format(missing_part)
-    # TODO - count the number of measurements with one datatype missing
+    print "# Missing {} datapoints".format(missing)
 
 def glib_runonce(func,*args):
     def runonce(func,*args):
