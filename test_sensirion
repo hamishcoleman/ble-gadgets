@@ -111,9 +111,9 @@ def do_download(dev, mintime=None, maxtime=None):
     print '#',now,'battery',battery
 
     dev.DownloadSetup(mintime, maxtime)
-    print '# download',dev._mintime,'-',dev._maxtime
+    print '# download',dev._mintime,'-',dev._maxtime,'(span=',dev._timespan,'count=',dev._passtotal,')'
     print '# interval=',dev._interval
-    print '# timespan=', dev._timespan, '(total=', dev._total,'passtotal=', dev._passtotal,')'
+    print '# passtotal=', dev._passtotal
 
     dev.RegularCallback(cb_regular)
     dev.DownloadCallback(cb_download)
