@@ -387,6 +387,8 @@ class Device:
             return False
 
         if not self.callbacks_self:
+            # FIXME - we could be already notifying on these from something
+            # that is listening for periodic data..
             GLib.timeout_add_seconds(0, runonce, self.humidity.StartNotify)
             GLib.timeout_add_seconds(0, runonce, self.temperature.StartNotify)
             self.callbacks_self = True
