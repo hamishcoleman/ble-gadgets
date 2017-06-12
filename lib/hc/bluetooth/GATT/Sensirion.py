@@ -111,10 +111,11 @@ class Measurement:
         return self
 
     def __str__(self):
-
-        # if we have no values, dont return a string!
-        if self.temperature is None and self.humidity is None:
-            return None
+        """represent the temperature and humidity as a string.  If there is
+           no data, then use the gnuplot "no data" string.
+           Be sure to use the complete() function to tell if the data
+           is complete before relying on this
+        """
 
         s = ''
         if self.temperature is not None:
