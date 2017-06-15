@@ -101,12 +101,21 @@ class Measurement:
 
         if self.index is None:
             self.index = value.index
+
         if self.timestamp is None:
             self.timestamp = value.timestamp
+        elif value.timestamp is not None and self.timestamp != value.timestamp:
+            raise ValueError
+
         if self.temperature is None:
             self.temperature = value.temperature
+        elif value.temperature is not None and self.temperature != value.temperature:
+            raise ValueError
+
         if self.humidity is None:
             self.humidity = value.humidity
+        elif value.humidity is not None and self.humidity != value.humidity:
+            raise ValueError
 
         return self
 
@@ -377,7 +386,9 @@ class Device:
         timestamp = self._mintime
         while timestamp <= self._maxtime:
             if timestamp not in self._history:
-                self._history[timestamp] = Measurement()
+                entry = Measurement()
+                entry.timestamp = timestamp
+                self._history[timestamp] = entry
             timestamp += self._interval
 
         def runonce(func,*args):
