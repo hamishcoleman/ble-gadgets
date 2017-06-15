@@ -38,7 +38,7 @@ import time
 def dump_history(device_path, hist):
     print "\n"
     print "#Log for",device_path
-    print "#timestamp temperature humidity index"
+    print "#timestamp temperature humidity"
 
     missing = 0
     prev = None
