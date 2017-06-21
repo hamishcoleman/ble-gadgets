@@ -365,13 +365,18 @@ class Device:
             # not connected?
             return None
 
+        self._interval = self.interval.cache_read()
+
         if min is None:
             self._mintime = self.mintime.cache_read()
+
+            # I've never successfully recieved the earliest datapoint, so I
+            # assume that they have an off-by-one issue somewhere
+            self._mintime += self._interval
         else:
             self.mintime.write(min)
             self._mintime = min
 
-        self._interval = self.interval.cache_read()
         self._timespan = self._maxtime - self._mintime
         self._passtotal = int(self._timespan / self._interval)
         if (min is None and max is None) or (self._total is None):
