@@ -388,13 +388,13 @@ class Device:
 
         # ensure that all expected history points exist (allowing for much
         # simple checking for missing points
-        timestamp = self._mintime
-        while timestamp <= self._maxtime:
+        timestamp = self._maxtime
+        while timestamp >= self._mintime:
             if timestamp not in self._history:
                 entry = Measurement()
                 entry.timestamp = timestamp
                 self._history[timestamp] = entry
-            timestamp += self._interval
+            timestamp -= self._interval
 
         def runonce(func,*args):
             """A wrapper for the GLib.timeout_add that just runs once
