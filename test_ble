@@ -27,6 +27,7 @@ sys.path.insert(0,
 import hc.dbus.Property
 import hc.bluetooth.GATT
 import hc.bluetooth.GATT.Sensirion
+import hc.bluetooth.GATT.OWON
 
 class Device:
     """Representing a bluetooth device
