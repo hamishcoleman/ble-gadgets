@@ -23,6 +23,16 @@ class TypeUint8(object):
         return struct.pack('B',value)
 
 
+class TypeUint16(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return struct.unpack('<H',bytearray(raw))[0]
+
+    @classmethod
+    def value2raw(cls, value):
+        return struct.pack('<H',value)
+
+
 class TypeUint32(object):
     @classmethod
     def raw2value(cls, raw):
@@ -96,6 +106,16 @@ class TypePercentUint8(object):
         return TypeUint8.value2raw(value*100)
 
 
+class TypePnP_ID(object):
+    @classmethod
+    def raw2value(cls, raw):
+        source = TypeUint8.raw2value(raw[0])
+        vendor_id = TypeUint16.raw2value(raw[1:3])
+        product_id = TypeUint16.raw2value(raw[3:5])
+        version = TypeUint16.raw2value(raw[5:7])
+        return (source, vendor_id, product_id, version)
+
+
 gatt_list = {
     # Standard things
     '00002a00-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
@@ -133,6 +153,13 @@ gatt_list = {
     },
     '00002a29-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
         'desc': 'manufacturer_name', 'category': 'string',
+    },
+    '00002a2a-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDump,
+        'desc': 'ieee_11073-20601_regulatory_certification_data_list',
+        'category': 'string',
+    },
+    '00002a50-0000-1000-8000-00805f9b34fb': { 'func': TypePnP_ID,
+        'desc': 'PnP_ID', 'category': 'string',
     },
 }
 
