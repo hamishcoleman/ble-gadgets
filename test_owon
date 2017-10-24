@@ -34,7 +34,8 @@ def glib_runonce(func,*args):
     GLib.timeout_add(0,runonce,func,*args)
 
 def cb_regular(device, value):
-    print "{} {}".format(
+    print "{} {} {}".format(
+        value.timestamp,
         value,
         device.path,
     )
@@ -54,7 +55,7 @@ def main():
         d = dev.path
 
         print '#Found: ',d
-        # FIXME - skip devices that are not online!
+        # FIXME - connect to devices that are not online!?
 
         dev.RegularCallback(cb_regular)
         dev.measurement.StartNotify()

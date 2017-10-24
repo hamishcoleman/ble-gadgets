@@ -7,7 +7,9 @@ import hc.bluetooth.GATT as GATT
 class TypeMeasurement(object):
     @classmethod
     def raw2value(cls, raw):
-        return GATT.TypeHexDump.raw2value(raw)
+        obj = MeasurementBase()
+        obj.raw = raw
+        return obj
 
 
 gatt_list = {
@@ -37,6 +39,15 @@ gatt_list = {
 }
 
 GATT.Characteristic.register(gatt_list)
+
+class MeasurementBase:
+
+    def __init__(self):
+        self.timestamp = None
+        self.raw = None
+
+    def __str__(self):
+        return GATT.TypeHexDump.raw2value(self.raw)
 
 class Device:
 
@@ -89,12 +100,11 @@ class Device:
             setattr(self,char_name,char[char_name])
 
     def _handleData(self, characteristic, value):
-        # the device sends notifies once per second, so we should
-        # bucket our data with that in mind - round time to 1/10 of
+        # the device appears to send notifies twicew per second, so we should
+        # bucket our data with that in mind - rounding time to 1/10 of
         # a second
-        # FIXME - does it?
         now = int(time.time()*10)/10.0
-        value = "{} {}".format(now, value)
+        value.timestamp = now
 
         self.callback_regular(self,value)
 
