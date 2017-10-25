@@ -36,9 +36,10 @@ def glib_runonce(func,*args):
 def cb_regular(device, value):
     print "{} {} {}".format(
         value.timestamp,
+        value.value,
         value,
-        device.path,
     )
+    # if we need to know which device this reading is from: device.path
 
 def main():
     bus = dbus.SystemBus()
