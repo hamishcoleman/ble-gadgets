@@ -21,7 +21,8 @@ Well known GATT UUIDs:
 0x2a27  utf8s     hardware revision string
 0x2a28  utf8s     software revision string
 0x2a29  utf8s     manufacturer name string
-
+0x2a2a  vendor    IEEE 11073-20601 Regulatory Cert. Data List
+0x2a50  complex   PnP ID
 
 Device specific GATT UUIDs:
 
@@ -35,4 +36,12 @@ Sensirion SmartGadget (see https://github.com/Sensirion/SmartGadget-Firmware)
 0000f239-b38d-4985-720e-0f993a68ee41 uint32t      logger interval
 
 
+Owon B35T Multimeter:
+00002a2a-0000-1000-8000-00805f9b34fb ?  "\xfe\x00experimental"
+0000fff0-0000-1000-8000-00805f9b34fb UUID?
+0000fff1-0000-1000-8000-00805f9b34fb ?  "ABCDEFGHIJKLMN\00\00"
+0000fff2-0000-1000-8000-00805f9b34fb = None
+0000fff3-0000-1000-8000-00805f9b34fb Buttons? (write-only)
+0000fff4-0000-1000-8000-00805f9b34fb complex    Notify measurement data
+0000fff5-0000-1000-8000-00805f9b34fb ? (write-only)
 
