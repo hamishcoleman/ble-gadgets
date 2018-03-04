@@ -66,6 +66,38 @@ def glib_runonce(func,*args):
         return False
     GLib.timeout_add(0,runonce,func,*args)
 
+def find_first_error(hist):
+    """Given a dict of measurements, find the timestamp of the last entry
+       before the first missing data
+    """
+    prev = None
+    for timestamp in sorted(hist.keys()):
+        this = hist[timestamp]
+        if this.complete() != 1:
+            if prev is not None:
+                return prev.timestamp
+            else:
+                # if the very first sample checked is missing
+                return this.timestamp
+        prev = this
+    return None
+
+def find_last_error(hist):
+    """Given a dict of measurements, find the timestamp of the first entry
+       before the last missing data
+    """
+    prev = None
+    for timestamp in reversed(sorted(hist.keys())):
+        this = hist[timestamp]
+        if this.complete() != 1:
+            if prev is not None:
+                return prev.timestamp
+            else:
+                # if the very first sample checked is missing
+                return this.timestamp
+        prev = this
+    return None
+
 def cb_regular(device, value):
     print "{} {} {}".format(
         value.timestamp,
@@ -77,7 +109,10 @@ def cb_download(object, values):
 
     if object._passnr < 5 and object._count < object._total:
         print "# try again"
-        do_download(object)
+        # FIXME - digging around in the object's internals
+        mintime=find_first_error(object._history)
+        maxtime=find_last_error(object._history)
+        do_download(object, mintime=mintime, maxtime=maxtime)
         return
 
     dump_history(object.path, values)
