@@ -45,3 +45,15 @@ Owon B35T Multimeter:
 0000fff4-0000-1000-8000-00805f9b34fb complex    Notify measurement data
 0000fff5-0000-1000-8000-00805f9b34fb ? (write-only)
 
+TODO:
+- check these notes against the real hardware:
+    buttons:
+        SELECT = 1,
+        RANGE = 2,
+        HOLD_LIGHT = 3,
+        DELTA_BT = 4,
+        HZ_DUTY = 5,
+        MAX_MIN = 6
+    button:
+        fff3 uint8 b, uint8 times
+
