@@ -135,7 +135,9 @@ datapoints, it is still possible for that to fail - if so, this is recorded
 in the output.
 
 The output is in a format that can be easily graphed by other tools (such
-as gnuplot)
+as gnuplot - see [1] for an example)
+
+[1]: plot_sensirion_data
 
 # Low-level BLE diagnostics
 
