@@ -35,6 +35,61 @@ system, the required package can be installed with:
 
 ## bluetoothctl
 
+The tools here communicate with the bluetooth network stack via the system
+bluetoothd daemon.  This communication is done via DBUS, which is why the
+dbus library is needed.
+
+By using the standard system-wide daemon, there should be no issues
+interoperating with any other users of the bluetooth services on your
+system.  In fact, this also means that the tools here can use the devices
+detected and connected to using any installed user interface (your desktop
+environment may have installed one for you)
+
+There is a commandline bluetooth manager (`bluetoothctl`) included with
+the bluez software and the steps to use it are outlined here:
+
+1. Start the manager
+
+   At a shell command prompt, run `bluetoothctl` - this should have no
+   requirement to run as root
+
+1. Power the bluetooth controller
+
+   The default installation leaves bluetooth controllers powered off until
+   they are manually powered on, so ensure that has happened:
+
+    power on
+
+1. Scanning for devices
+
+   Until a device scan has been done, there are no devices known to the
+   bluetooth stack:
+
+    scan on
+
+   The scan will run in the background and any found devices will be printed
+   out.  Since this will keep running and spamming the screen (and sending
+   some bluetooth request packets), it is good to turn it off once the correct
+   devices have been discovered:
+
+    scan off
+
+1. Listing the known devices
+
+   The bluetooth stack will remember previously seen devices, and this list
+   can be shown:
+
+    devices
+
+1. Connecting to a device
+
+   The device specific tools included in this repository only work on connected
+   devices, so the final setup step is to do that:
+
+    connect $MACADDR
+
+   (Use the correct MACADDR from the `devices` list)
+
 ## test_ble
 
 test_ble        - script to fetch attributes from BLE devices.
