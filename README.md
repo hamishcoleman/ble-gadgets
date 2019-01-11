@@ -103,10 +103,16 @@ the bluez software and the steps to use it are outlined here:
 
 ## test_ble
 
-test_ble        - script to fetch attributes from BLE devices.
-    Devices must have been discovered by turning bluetooth scanning on
-    beforehand.  By default it only fetches "known" attributes that are
-    in the category "graphable".  Use the "--help" option for more details
+This tool provides a general-purpose characteristic download from bluetooth
+devices.  While the devices list must have been populated by performing
+a bluetooth scan beforehand, it will automatically connect to the
+devices.
+
+By default it only fetches "known" attributes that are in the category
+"graphable".  Use the "--help" option for more details on changing this.
+
+The tool uses a heuristic to try to exclude non BLE devices, but this can
+be disabled with the "--also_nonble" option.
 
 ## test_owon
 
@@ -117,8 +123,19 @@ shown intermingled - which may not be what you want.
 
 ## test_sensirion
 
-test_sensirion  - script to download the saved temperature log from Sensirion
-    SmartGadget Temperature/Humidity sensors.
+Running this tool will download historical temperature and humidity
+measurements and then continue by showing the real-time readings.
+
+There is also an option to skip the real-time monitoring and exit as
+soon as the download has completed.
+
+Note that the BLE protocol used to fetch the history is not particularly
+robust and while some automated attempts are made to re-request any missing
+datapoints, it is still possible for that to fail - if so, this is recorded
+in the output.
+
+The output is in a format that can be easily graphed by other tools (such
+as gnuplot)
 
 # Low-level BLE diagnostics
 
