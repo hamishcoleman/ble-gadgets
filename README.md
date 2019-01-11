@@ -22,6 +22,8 @@ An important part of helping this to happen is a list of known GATT
 properties and their contents.  To this end, there is a quick reference
 text summary of some attributes in the [GATT] file.
 
+[GATT]: ./GATT
+
 # Installing required libraries
 
 These tools use the python dbus libraries.  Under a Debian or Ubuntu operating
