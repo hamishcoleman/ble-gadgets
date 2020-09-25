@@ -48,7 +48,7 @@ class Cache:
         """
         self._validate()
         result = set()
-        for path, interfaces in self.all_objects.iteritems():
+        for path, interfaces in self.all_objects.items():
             if interface in interfaces:
                 result.add(path)
         return result

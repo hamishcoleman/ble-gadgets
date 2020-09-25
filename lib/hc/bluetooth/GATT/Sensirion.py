@@ -130,12 +130,12 @@ class Measurement:
         if self.temperature is not None:
             s += "{:.2f}".format(self.temperature)
         else:
-            s += "\N"
+            s += "\\N"
         s += " "
         if self.humidity is not None:
             s += "{:.2f}".format(self.humidity)
         else:
-            s += "\N"
+            s += "\\N"
 
         return s
 
@@ -358,6 +358,7 @@ class Device:
         if max is None:
             self._maxtime = self.maxtime.cache_read()
         else:
+            max = int(max)
             self.maxtime.write(max)
             self._maxtime = max
 
@@ -374,6 +375,7 @@ class Device:
             # assume that they have an off-by-one issue somewhere
             self._mintime += self._interval
         else:
+            min = int(min)
             self.mintime.write(min)
             self._mintime = min
 

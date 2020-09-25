@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Simple test script to try and interact with BLE devices
 #
@@ -87,21 +87,21 @@ def list_devices(bus,prop):
         if device.name is not None:
             name = device.name
         else:
-            name = "\N"
+            name = "\\N"
 
         # TODO
         # - name can contain unicode, and is correctly typed as a unicode
         # string, but running format() with a unicode param fails with
         # a codec error..
-        print device.address, name
-        print "  Connected={} ServicesResolved={} Appearance={}".format(
+        print(device.address, name)
+        print("  Connected={} ServicesResolved={} Appearance={}".format(
             device.connected(),
             device.servicesresolved(),
             device.appearance
-        )
+        ))
 
         for uuid in device.uuids:
-            print "  {}".format(uuid)
+            print("  {}".format(uuid))
 
 
 def phase_find_new_devices(bus,prop):
@@ -132,7 +132,7 @@ def phase_connect_new_devices(args,devices):
             # try to exclude non BLE devices
             continue
 
-        print "Connecting", device.path
+        print("Connecting", device.path)
         connected = device.Connect()
         if connected:
             new_device_list.append(device)
@@ -148,10 +148,10 @@ def phase_wait_for_servicesresolved(prop,devices):
         new_device_list = []
         for device in devices:
             if not device.servicesresolved():
-                print "Waiting for ServicesResolved from", device.path
+                print("Waiting for ServicesResolved from", device.path)
                 new_device_list.append(device)
         devices = new_device_list
-        print
+        print()
 
 
 def phase_characteristics_list(args,bus,prop):
@@ -163,8 +163,8 @@ def phase_characteristics_list(args,bus,prop):
         object = hc.bluetooth.GATT.Characteristic(bus,prop,path)
 
         if args.verbose>2:
-            print "Found",object.path
-            print " UUID",object.uuid
+            print("Found",object.path)
+            print(" UUID",object.uuid)
 
         want = False
         if object.category in args.category:
@@ -196,29 +196,29 @@ def phase_connect_devices(bus,prop,tree):
     # since we might change the tree, we need to iterate over a snapshot here
     device_paths = tree.keys()
     # confirm that all the devices are connected
-    for device_path in device_paths:
+    for device_path in list(device_paths):
         device = Device(bus,prop,device_path)
 
         # try to ensure that this device is still connected
         if not device.connected():
-            print " Connecting", device.path
+            print(" Connecting", device.path)
             if not device.Connect():
                 # we failed the connection, delete this device
-                print "  Failed"
+                print("  Failed")
                 tree.pop(device.path)
 
 
 def phase_fetch(bus,prop,tree):
     # finally, walk the tree
-    for device_path,chars in tree.iteritems():
+    for device_path,chars in tree.items():
         device = Device(bus,prop,device_path)
-        print "Device",device.address
-        for char_path, object in chars.iteritems():
+        print("Device",device.address)
+        for char_path, object in chars.items():
             if args.verbose>1:
-                print " Path",object.path
-                print " UUID",object.uuid
+                print(" Path",object.path)
+                print(" UUID",object.uuid)
 
-            print "  {} = {}".format(object.desc,object.read())
+            print("  {} = {}".format(object.desc,object.read()))
 
 
 def main(args):
@@ -234,7 +234,7 @@ def main(args):
     device_list = phase_find_new_devices(bus,prop)
 
     if args.verbose:
-        print time.time(),"Phase 1: Connect new devices"
+        print(time.time(),"Phase 1: Connect new devices")
 
     device_list = phase_connect_new_devices(args,device_list)
 
@@ -243,28 +243,28 @@ def main(args):
     # want to power on/off the hci interface (and try again?)
 
     if args.verbose:
-        print time.time(),"Phase 2: Wait for ServicesResolved"
+        print(time.time(),"Phase 2: Wait for ServicesResolved")
 
     phase_wait_for_servicesresolved(prop,device_list)
 
     if args.verbose:
         list_devices(bus,prop)
-        print
+        print()
 
     tree = phase_characteristics_list(args,bus,prop)
 
     if args.verbose:
-        print time.time(),"Phase 3: Confirm needed Devices are Connected"
+        print(time.time(),"Phase 3: Confirm needed Devices are Connected")
 
     phase_connect_devices(bus,prop,tree)
 
     if args.verbose:
-        print time.time(),"Phase 4: Fetch Characteristic values"
+        print(time.time(),"Phase 4: Fetch Characteristic values")
 
     phase_fetch(bus,prop,tree)
 
     if args.verbose:
-        print time.time(),"Phase 5: ends"
+        print(time.time(),"Phase 5: ends")
 
 
 def do_options():

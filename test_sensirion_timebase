@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Try to work out what is going on with the timestamps in the device
 
 import argparse
 import dbus
 
-from dbus.glib import DBusGMainLoop
+from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 
 import os
@@ -49,10 +49,14 @@ def do_fetch(dev):
     db['this']['now'] = now
     db['this']['min'] = dev.mintime.read()
     db['this']['max'] = dev.maxtime.read()
-    db['this']['bat'] = dev.battery.read()
+
+    if hasattr(dev,'battery'):
+        db['this']['bat'] = dev.battery.read()
+    else:
+        db['this']['bat'] = "\\N"
 
     if db['prev'] is not None:
-        print "{:.6f} {:.6f} {:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
+        print("{:.6f} {:.6f} {:.6f} {:.6f} {} {:.6f} {:.6f} {:.6f}".format(
             now,
             settime,
             db['this']['min'],
@@ -62,10 +66,10 @@ def do_fetch(dev):
             now - db['prev']['now'],
             now - db['this']['max'],
             db['this']['max'] - db['prev']['max'],
-        )
+        ))
     else:
-        print "# cache warmup"
-        print "#now settime min max delta.now delta.now-max delta.max"
+        print("# cache warmup")
+        print("#now settime min max delta.now delta.now-max delta.max")
 
     db['prev'] = db['this']
     db['this'] = {}
@@ -79,14 +83,14 @@ def main():
     devs = hc.bluetooth.GATT.Sensirion.Device.all(bus, prop)
 
     if not devs:
-        print '# no devices found'
+        print('# no devices found')
         hack_loop.quit()
         return None
 
     for dev in devs:
         d = dev.path
 
-        print '#Found: ',d
+        print('#Found: ',d)
         GLib.timeout_add(0,do_fetch,dev)
 
 def do_options():
