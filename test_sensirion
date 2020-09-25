@@ -132,9 +132,9 @@ def cb_download_progress(object, index, passnr, count, total):
 
 def do_download(dev, mintime=None, maxtime=None):
     now = time.time()
-    battery = dev.battery.read()
-    if battery is None:
-        print '# not connected'
+    interval = dev.interval.read()
+    if interval is None:
+        print('# not connected')
 
         # dump out what we do have, if anything
         # FIXME - digging around in the object's internals
@@ -143,6 +143,13 @@ def do_download(dev, mintime=None, maxtime=None):
 
         hack_loop.quit()
         return None
+
+    if hasattr(dev, 'battery'):
+        battery = dev.battery.read()
+    else:
+        # WTF? did the firmware just delete it in the last year?
+        battery = 'nobatteryattr'
+
     print('#',now,'battery',battery)
 
     dev.DownloadSetup(mintime, maxtime)
