@@ -106,6 +106,34 @@ class TypePercentUint8(object):
         return TypeUint8.value2raw(value*100)
 
 
+class Temperature(object):
+    def __init__(self, celcius):
+        self.temperature = celcius
+
+    def __str__(self):
+        return "{:.1f}°C".format(self.temperature)
+
+
+class TypeTemperature(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return Temperature(TypeUint16.raw2value(raw) / 10.0)
+
+
+class Humidity(object):
+    def __init__(self, percent):
+        self.humidity = percent
+
+    def __str__(self):
+        return "{:.2f}%".format(self.humidity)
+
+
+class TypeHumidity(object):
+    @classmethod
+    def raw2value(cls, raw):
+        return Humidity(TypeUint16.raw2value(raw) / 100.0)
+
+
 class TypePnP_ID(object):
     @classmethod
     def raw2value(cls, raw):
@@ -132,6 +160,12 @@ gatt_list = {
     },
     '00002a19-0000-1000-8000-00805f9b34fb': { 'func': TypePercentUint8,
         'desc': 'Battery', 'category': 'normal',
+    },
+    '00002a1f-0000-1000-8000-00805f9b34fb': { 'func': TypeTemperature,
+        'desc': 'Temperature', 'category': 'normal',
+    },
+    '00002a6f-0000-1000-8000-00805f9b34fb': { 'func': TypeHumidity,
+        'desc': 'Humidity', 'category': 'normal',
     },
     '00002a23-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDigits,
         'desc': 'system_id', 'category': 'id',
