@@ -6,61 +6,61 @@ import dbus
 class TypeSint8(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('b',bytearray(raw))[0]
+        return struct.unpack('b', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('b',value)
+        return struct.pack('b', value)
 
 
 class TypeUint8(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('B',bytearray(raw))[0]
+        return struct.unpack('B', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('B',value)
+        return struct.pack('B', value)
 
 
 class TypeUint16(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('<H',bytearray(raw))[0]
+        return struct.unpack('<H', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('<H',value)
+        return struct.pack('<H', value)
 
 
 class TypeUint32(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('<I',bytearray(raw))[0]
+        return struct.unpack('<I', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('<I',value)
+        return struct.pack('<I', value)
 
 
 class TypeFloat32(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('<f',bytearray(raw))[0]
+        return struct.unpack('<f', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('<f',value)
+        return struct.pack('<f', value)
 
 
 class TypeUint64(object):
     @classmethod
     def raw2value(cls, raw):
-        return struct.unpack('<Q',bytearray(raw))[0]
+        return struct.unpack('<Q', bytearray(raw))[0]
 
     @classmethod
     def value2raw(cls, value):
-        return struct.pack('<Q',value)
+        return struct.pack('<Q', value)
 
 
 class TypeUtf8s(object):
@@ -78,7 +78,7 @@ class TypeHexDigits(object):
     def raw2value(cls, raw):
         s = ''
         for ch in raw[::-1]:
-            s += format(ch,'02x')
+            s += format(ch, '02x')
         return s
 
 
@@ -88,11 +88,11 @@ class TypeHexDump(object):
         s = ''
         h = ''
         for ch in raw:
-            if ch in range(0x20,0x7e):
+            if ch in range(0x20, 0x7e):
                 s += chr(ch)
             else:
                 s += ' '
-            h += format(ch,'02x') + ','
+            h += format(ch, '02x') + ','
         return h+' '+s
 
 
@@ -146,53 +146,53 @@ class TypePnP_ID(object):
 
 gatt_list = {
     # Standard things
-    '00002a00-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a00-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'device_name', 'category': 'string',
     },
-    '00002a05-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDump,
+    '00002a05-0000-1000-8000-00805f9b34fb': {'func': TypeHexDump,
         'desc': 'service_changed', 'category': 'misc',
     },
-    #'00002a06-0000-1000-8000-00805f9b34fb': { 'func': TypeSint8,
-    #    'desc': 'alert_level', 'category': 'writable', # TODO - handle writes
-    #},
-    '00002a07-0000-1000-8000-00805f9b34fb': { 'func': TypeSint8,
+    # '00002a06-0000-1000-8000-00805f9b34fb': {'func': TypeSint8,
+    #     'desc': 'alert_level', 'category': 'writable', # TODO - handle writes
+    # },
+    '00002a07-0000-1000-8000-00805f9b34fb': {'func': TypeSint8,
         'desc': 'tx_power_level', 'category': 'normal',
     },
-    '00002a19-0000-1000-8000-00805f9b34fb': { 'func': TypePercentUint8,
+    '00002a19-0000-1000-8000-00805f9b34fb': {'func': TypePercentUint8,
         'desc': 'Battery', 'category': 'normal',
     },
-    '00002a1f-0000-1000-8000-00805f9b34fb': { 'func': TypeTemperature,
+    '00002a1f-0000-1000-8000-00805f9b34fb': {'func': TypeTemperature,
         'desc': 'Temperature', 'category': 'normal',
     },
-    '00002a6f-0000-1000-8000-00805f9b34fb': { 'func': TypeHumidity,
+    '00002a6f-0000-1000-8000-00805f9b34fb': {'func': TypeHumidity,
         'desc': 'Humidity', 'category': 'normal',
     },
-    '00002a23-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDigits,
+    '00002a23-0000-1000-8000-00805f9b34fb': {'func': TypeHexDigits,
         'desc': 'system_id', 'category': 'id',
     },
-    '00002a24-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a24-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'model_number', 'category': 'string',
     },
-    '00002a25-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a25-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'serial_number', 'category': 'string',
     },
-    '00002a26-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a26-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'firmware_revision', 'category': 'string',
     },
-    '00002a27-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a27-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'hardware_revision', 'category': 'string',
     },
-    '00002a28-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a28-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'software_revision', 'category': 'string',
     },
-    '00002a29-0000-1000-8000-00805f9b34fb': { 'func': TypeUtf8s,
+    '00002a29-0000-1000-8000-00805f9b34fb': {'func': TypeUtf8s,
         'desc': 'manufacturer_name', 'category': 'string',
     },
-    '00002a2a-0000-1000-8000-00805f9b34fb': { 'func': TypeHexDump,
+    '00002a2a-0000-1000-8000-00805f9b34fb': {'func': TypeHexDump,
         'desc': 'ieee_11073-20601_regulatory_certification_data_list',
         'category': 'string',
     },
-    '00002a50-0000-1000-8000-00805f9b34fb': { 'func': TypePnP_ID,
+    '00002a50-0000-1000-8000-00805f9b34fb': {'func': TypePnP_ID,
         'desc': 'PnP_ID', 'category': 'string',
     },
 }
@@ -208,7 +208,6 @@ class Characteristic:
         """
         gatt_list.update(list)
 
-
     def __init__(self, bus, prop, path):
         # FIXME - there should only be one instance for any path, we should
         # keep a class dictionary and return refs to existing objects
@@ -221,12 +220,16 @@ class Characteristic:
         self.path = path
         self.prop = prop
 
-        self.proxy = bus.get_object('org.bluez',path)
+        self.proxy = bus.get_object('org.bluez', path)
         self.char = dbus.Interface(self.proxy,
                               dbus_interface="org.bluez.GattCharacteristic1")
 
         # properties that will not change
-        self.uuid = self.prop.Get(self.path, 'org.bluez.GattCharacteristic1','UUID')
+        self.uuid = self.prop.Get(
+            self.path,
+            'org.bluez.GattCharacteristic1',
+            'UUID'
+        )
 
         if self.uuid in gatt_list:
             self.entry = gatt_list[self.uuid]
@@ -243,12 +246,12 @@ class Characteristic:
         self.category = self.entry['category']
         self.exception = None
 
-    def raw2value(self,raw):
+    def raw2value(self, raw):
         """Given the raw read results, convert it to a meaningful object
         """
         return self.entry['func'].raw2value(raw)
 
-    def value2raw(self,value):
+    def value2raw(self, value):
         """Convert the meaningful value into a raw object bytestring
         """
         return self.entry['func'].value2raw(value)
@@ -266,12 +269,12 @@ class Characteristic:
             return None
         return self.raw2value(raw)
 
-    def write(self,value):
+    def write(self, value):
         self.cache_invalidate()
         self.exception = None
         try:
             raw = self.value2raw(value)
-            result = self.char.WriteValue(raw,{'none':0})
+            result = self.char.WriteValue(raw, {'none': 0})
         except dbus.exceptions.DBusException as e:
             self.prop.invalidate()
             self.exception = e
@@ -295,11 +298,19 @@ class Characteristic:
     def device_path(self):
         """Follow the pointers in the objects to find the parent device
         """
-        service_path = self.prop.Get(self.path, 'org.bluez.GattCharacteristic1','Service')
-        device_path = self.prop.Get(service_path, 'org.bluez.GattService1','Device')
+        service_path = self.prop.Get(
+            self.path,
+            'org.bluez.GattCharacteristic1',
+            'Service'
+        )
+        device_path = self.prop.Get(
+            service_path,
+            'org.bluez.GattService1',
+            'Device'
+        )
         return device_path
 
-    def NotifyCallback(self,callback):
+    def NotifyCallback(self, callback):
         """Set a callback function that will recieve new values
         """
         if callback is None:
@@ -307,7 +318,7 @@ class Characteristic:
             self.signal.remove()
             self.signal = None
             self.callback = None
-            #self.StopNotify()
+            # self.StopNotify()
             return
 
         if self.signal is not None:
@@ -315,7 +326,7 @@ class Characteristic:
         if self.callback is not None:
             raise ValueError
 
-        def wrapper(*args,**kwargs):
+        def wrapper(*args, **kwargs):
             if args[0] != 'org.bluez.GattCharacteristic1':
                 # will this ever happen?
                 raise ValueError
@@ -323,8 +334,11 @@ class Characteristic:
                 # it will call us with "Notifying=True" (and probably false)
                 return
             values = self.raw2value(args[1]['Value'])
-            self.callback(self,values)
+            self.callback(self, values)
 
         self.callback = callback
-        self.signal = self.proxy.connect_to_signal('PropertiesChanged',wrapper)
-        #self.StartNotify()
+        self.signal = self.proxy.connect_to_signal(
+            'PropertiesChanged',
+            wrapper
+        )
+        # self.StartNotify()

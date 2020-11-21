@@ -4,6 +4,7 @@ import time
 
 import hc.bluetooth.GATT as GATT
 
+
 class TypeMeasurement(object):
     @classmethod
     def raw2value(cls, attr, raw):
@@ -15,7 +16,7 @@ class TypeMeasurement(object):
         index = GATT.TypeUint32.raw2value(raw[0:4])
         del raw[0:4]
         r = []
-        while len(raw)>3:
+        while len(raw) > 3:
             obj = Measurement()
             setattr(obj, attr, GATT.TypeFloat32.raw2value(raw[0:4]))
             obj.index = index
@@ -28,13 +29,13 @@ class TypeMeasurement(object):
 class TypeHumidity(object):
     @classmethod
     def raw2value(cls, raw):
-        return TypeMeasurement.raw2value('humidity',raw)
+        return TypeMeasurement.raw2value('humidity', raw)
 
 
 class TypeTemperature(object):
     @classmethod
     def raw2value(cls, raw):
-        return TypeMeasurement.raw2value('temperature',raw)
+        return TypeMeasurement.raw2value('temperature', raw)
 
 
 class TypeTimestamp64ms(object):
@@ -59,25 +60,25 @@ class TypeSensirion32interval(object):
 
 gatt_list = {
     # Sensirion SmartGadget
-    '00001235-b38d-4985-720e-0f993a68ee41': { 'func': TypeHumidity,
+    '00001235-b38d-4985-720e-0f993a68ee41': {'func': TypeHumidity,
         'desc': 'Humidity', 'category': 'normal',
     },
-    '00002235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTemperature,
+    '00002235-b38d-4985-720e-0f993a68ee41': {'func': TypeTemperature,
         'desc': 'Temperature', 'category': 'normal',
     },
-    '0000f235-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
+    '0000f235-b38d-4985-720e-0f993a68ee41': {'func': TypeTimestamp64ms,
         'desc': 'set_Time', 'category': 'misc',
     },
-    '0000f236-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
+    '0000f236-b38d-4985-720e-0f993a68ee41': {'func': TypeTimestamp64ms,
         'desc': 'log_Min_Time', 'category': 'misc',
     },
-    '0000f237-b38d-4985-720e-0f993a68ee41': { 'func': TypeTimestamp64ms,
+    '0000f237-b38d-4985-720e-0f993a68ee41': {'func': TypeTimestamp64ms,
         'desc': 'log_Max_Time', 'category': 'misc',
     },
-    '0000f238-b38d-4985-720e-0f993a68ee41': { 'func': GATT.TypeSint8,
+    '0000f238-b38d-4985-720e-0f993a68ee41': {'func': GATT.TypeSint8,
         'desc': 'trigger_send_log', 'category': 'misc',
     },
-    '0000f239-b38d-4985-720e-0f993a68ee41': { 'func': TypeSensirion32interval,
+    '0000f239-b38d-4985-720e-0f993a68ee41': {'func': TypeSensirion32interval,
         'desc': 'logger_interval', 'category': 'misc',
     },
 }
@@ -152,10 +153,11 @@ class Measurement:
         # otherwise, partially complete
         return 0.5
 
+
 class Device:
 
     @classmethod
-    def all(cls, bus,prop):
+    def all(cls, bus, prop):
         """look through the available interfaces for sensirion devices
             Note that this is pretty yucky, but works for the moment
         """
@@ -174,7 +176,7 @@ class Device:
 
         all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
         for path in all_gatt:
-            object = GATT.Characteristic(bus,prop,path)
+            object = GATT.Characteristic(bus, prop, path)
             if object.uuid in wanted:
                 name = wanted[object.uuid]
                 device_path = object.device_path()
@@ -185,7 +187,15 @@ class Device:
         r = []
         for d in devices:
             # ensure that all the required characteristics have been found
-            for char_name in ['humidity','temperature','mintime','maxtime','sendlog','interval']:
+            chars = [
+                'humidity',
+                'temperature',
+                'mintime',
+                'maxtime',
+                'sendlog',
+                'interval'
+            ]
+            for char_name in chars:
                 if char_name not in devices[d]:
                     raise ValueError
             r.append(Device(bus, prop, d, devices[d]))
@@ -217,7 +227,7 @@ class Device:
         del char['settime']
 
         for char_name in char:
-            setattr(self,char_name,char[char_name])
+            setattr(self, char_name, char[char_name])
 
     # Ideally, settime would return success/fail of trying to write to
     # the dev - the bluez interface does that by raising exceptions
@@ -254,7 +264,7 @@ class Device:
             self.prev_value += value
         else:
             # this is a new time period, flush the old data
-            self.callback_regular(self,self.prev_value)
+            self.callback_regular(self, self.prev_value)
             self.prev_value = value
 
     def _handleDataDownload(self, characteristic, values):
@@ -300,7 +310,7 @@ class Device:
         # if we get here, the download has started, but not progressed
         # recently
 
-        self.callback_download(self,self._history)
+        self.callback_download(self, self._history)
         return False
 
     def _handleData(self, characteristic, values):
@@ -398,7 +408,7 @@ class Device:
                 self._history[timestamp] = entry
             timestamp -= self._interval
 
-        def runonce(func,*args):
+        def runonce(func, *args):
             """A wrapper for the GLib.timeout_add that just runs once
             """
             func(*args)
@@ -419,11 +429,10 @@ class Device:
         """Actually start the download
         """
 
-        def runonce(func,*args):
+        def runonce(func, *args):
             """A wrapper for the GLib.timeout_add that just runs once
             """
             func(*args)
             return False
 
         GLib.timeout_add_seconds(0, runonce, self.sendlog.write, 1)
-

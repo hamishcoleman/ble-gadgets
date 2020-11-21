@@ -1,44 +1,45 @@
 
-from gi.repository import GLib
 import time
 
 import hc.bluetooth.GATT as GATT
+
 
 class TypeMeasurement(object):
     @classmethod
     def raw2value(cls, raw):
         obj = MeasurementBase(raw)
-        #obj.debug = True
+        # obj.debug = True
         return obj
 
 
 gatt_list = {
-    '0000fff0-0000-1000-8000-00805f9b34fb': { 'func': GATT.TypeHexDump,
+    '0000fff0-0000-1000-8000-00805f9b34fb': {'func': GATT.TypeHexDump,
         'desc': 'UUID', 'category': 'strings',
     },
-    '0000fff1-0000-1000-8000-00805f9b34fb': { 'func': GATT.TypeUtf8s,
+    '0000fff1-0000-1000-8000-00805f9b34fb': {'func': GATT.TypeUtf8s,
         # "ABCDEFGHIJKLMN"
         'desc': 'unknown1', 'category': 'strings',
     },
-    '0000fff2-0000-1000-8000-00805f9b34fb': { 'func': GATT.TypeHexDump,
+    '0000fff2-0000-1000-8000-00805f9b34fb': {'func': GATT.TypeHexDump,
         # 23,ff,00,01,02,00
         'desc': 'unknown2', 'category': 'strings',
     },
-#    '0000fff3-0000-1000-8000-00805f9b34fb': { 'func': GATT.TypeHexDump,
-#        # Write uint8 button_nr, uint8 times
-#        'desc': 'press_button', 'category': 'misc',
-#    },
-    '0000fff4-0000-1000-8000-00805f9b34fb': { 'func': TypeMeasurement,
+    # '0000fff3-0000-1000-8000-00805f9b34fb': {'func': GATT.TypeHexDump,
+    #     # Write uint8 button_nr, uint8 times
+    #     'desc': 'press_button', 'category': 'misc',
+    # },
+    '0000fff4-0000-1000-8000-00805f9b34fb': {'func': TypeMeasurement,
         # Notify only
         'desc': 'measurement', 'category': 'normal',
     },
-#    '0000fff5-0000-1000-8000-00805f9b34fb': { 'func': GATT.TypeHexDump,
-#        # Write
-#        'desc': 'unknown5', 'category': 'strings',
-#    },
+    # '0000fff5-0000-1000-8000-00805f9b34fb': {'func': GATT.TypeHexDump,
+    #     # Write
+    #     'desc': 'unknown5', 'category': 'strings',
+    # },
 }
 
 GATT.Characteristic.register(gatt_list)
+
 
 class MeasurementBase:
 
@@ -47,44 +48,44 @@ class MeasurementBase:
         self.timestamp = None
         self.debug = False
 
-        self.mode = (raw[0]&0xc0)>>6 | (raw[1]&3)<<2
-        if self.mode>12:
+        self.mode = (raw[0] & 0xc0) >> 6 | (raw[1] & 3) << 2
+        if self.mode > 12:
             raise ValueError(
                 "Unknown mode value {} in raw data".format(self.mode))
 
         # scale1 is for the SI suffix
-        self.raw_scale1 = (raw[0]&0x38)>>3
-        if self.raw_scale1==0 or self.raw_scale1==7:
+        self.raw_scale1 = (raw[0] & 0x38) >> 3
+        if self.raw_scale1 == 0 or self.raw_scale1 == 7:
             raise ValueError(
                 "Unknown scale value {} in raw data".format(self.raw_scale1))
 
         # scale2 is for where the decimal point is
-        self.raw_scale2 = raw[0]&7
+        self.raw_scale2 = raw[0] & 7
         if self.raw_scale2 in [4, 5, 6]:
             raise ValueError(
                 "Unknown decimal place {} in raw data".format(self.raw_scale2))
 
-        if raw[1]&0xfc != 0xf0:
+        if raw[1] & 0xfc != 0xf0:
             raise ValueError("Unknwon mode bits set in raw data")
 
         flags = raw[2]
-        self.hold       = (flags&1)!=0
-        self.delta      = (flags&2)!=0
-        self.AutoRange  = (flags&4)!=0
-        self.BatteryLow = (flags&8)!=0
-        self.Min        = (flags&0x10)!=0
-        self.Max        = (flags&0x20)!=0
-        if (flags&0xc0)!=0:
+        self.hold       = (flags & 1) != 0
+        self.delta      = (flags & 2) != 0
+        self.AutoRange  = (flags & 4) != 0
+        self.BatteryLow = (flags & 8) != 0
+        self.Min        = (flags & 0x10) != 0
+        self.Max        = (flags & 0x20) != 0
+        if (flags & 0xc0) != 0:
             raise ValueError("Unknown flags bit set in raw data")
 
-        if raw[3]!=0:
+        if raw[3] != 0:
             raise ValueError("Unknown byte set in raw data")
 
-        negative = (raw[5]&0x80)!=0
-        if (raw[5]&0x40)!=0:
+        negative = (raw[5] & 0x80) != 0
+        if (raw[5] & 0x40) != 0:
             raise ValueError("Unknown value bit set in raw data")
 
-        self.raw_value = GATT.TypeUint16.raw2value([raw[4], raw[5]&0x3f])
+        self.raw_value = GATT.TypeUint16.raw2value([raw[4], raw[5] & 0x3f])
         if negative:
             self.raw_value = -self.raw_value
 
@@ -134,9 +135,9 @@ class MeasurementBase:
         suffix = self.si_suffix()
         if suffix:
             s += ' '+suffix
-        #do something better with the raw_value
-        #do something better with the scale
-        #s+=unit
+        # do something better with the raw_value
+        # do something better with the scale
+        # s+=unit
 
         s += ' '+self.mode_name()
 
@@ -146,7 +147,7 @@ class MeasurementBase:
             if getattr(self, name):
                 flags.append(name)
         if flags:
-            s+= ' ('+','.join(flags)+')'
+            s += ' (' + ','.join(flags) + ')'
 
         if self.debug:
             s += " "+GATT.TypeHexDump.raw2value(self.raw)
@@ -162,25 +163,26 @@ class MeasurementBase:
 
     def si_suffix(self):
         # TODO - micro + utf8
-        suffixes = [ '?000', 'n', 'u', 'm', '', 'k', 'M' ]
+        suffixes = ['?000', 'n', 'u', 'm', '', 'k', 'M']
         return suffixes[self.raw_scale1]
 
     def si_adjust(self):
-        scale = [ None, 0.000000001, 0.000001, 0.001, 1, 1000, 1000000 ]
+        scale = [None, 0.000000001, 0.000001, 0.001, 1, 1000, 1000000]
         return scale[self.raw_scale1]
 
     def decimal_adjust(self):
-        scale = [ 1, 0.1, 0.01, 0.001, 0, 0, 0, float('nan') ]
+        scale = [1, 0.1, 0.01, 0.001, 0, 0, 0, float('nan')]
         return scale[self.raw_scale2]
 
     @property
     def value(self):
         return self.raw_value * self.decimal_adjust() * self.si_adjust()
 
+
 class Device:
 
     @classmethod
-    def all(cls, bus,prop):
+    def all(cls, bus, prop):
         """look through the available interfaces for sensirion devices
             Note that this is pretty yucky, but works for the moment
         """
@@ -196,7 +198,7 @@ class Device:
 
         all_gatt = prop.interface2paths('org.bluez.GattCharacteristic1')
         for path in all_gatt:
-            object = GATT.Characteristic(bus,prop,path)
+            object = GATT.Characteristic(bus, prop, path)
             if object.uuid in wanted:
                 name = wanted[object.uuid]
                 device_path = object.device_path()
@@ -207,7 +209,14 @@ class Device:
         r = []
         for d in devices:
             # ensure that all the required characteristics have been found
-            for char_name in ['unknown1str','unknown2hex','press_button','measurement','unknown5']:
+            chars = [
+                'unknown1str',
+                'unknown2hex',
+                'press_button',
+                'measurement',
+                'unknown5'
+            ]
+            for char_name in chars:
                 if char_name not in devices[d]:
                     raise ValueError
             r.append(Device(bus, prop, d, devices[d]))
@@ -225,7 +234,7 @@ class Device:
         self.callbacks_self = False
 
         for char_name in char:
-            setattr(self,char_name,char[char_name])
+            setattr(self, char_name, char[char_name])
 
     def _handleData(self, characteristic, value):
         # the device appears to send notifies twicew per second, so we should
@@ -234,7 +243,7 @@ class Device:
         now = int(time.time()*10)/10.0
         value.timestamp = now
 
-        self.callback_regular(self,value)
+        self.callback_regular(self, value)
 
     def _setup_callbacks(self):
         if self.callback_regular is None and self.callback_download is None:
@@ -255,4 +264,3 @@ class Device:
         """
         self.callback_regular = cb
         self._setup_callbacks()
-

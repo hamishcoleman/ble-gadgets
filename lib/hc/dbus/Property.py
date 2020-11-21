@@ -1,6 +1,7 @@
 
 import dbus
 
+
 class Cache:
     """Keep a cache of the managed objects
     """
@@ -13,10 +14,10 @@ class Cache:
     def __init__(self, bus):
         # TODO: do we care that this hardcodes the destination on what is
         # a generic call?
-        proxy = bus.get_object('org.bluez','/')
+        proxy = bus.get_object('org.bluez', '/')
 
         self.manager = dbus.Interface(proxy,
-                          dbus_interface="org.freedesktop.DBus.ObjectManager")
+                  dbus_interface="org.freedesktop.DBus.ObjectManager") # noqa
         self.valid = 0
 
     def _validate(self):
@@ -33,7 +34,7 @@ class Cache:
     def invalidate(self):
         self.valid = 0
 
-    def Get(self,path,interface,property):
+    def Get(self, path, interface, property):
         self._validate()
         if path not in self.all_objects:
             return None
@@ -43,7 +44,7 @@ class Cache:
             return None
         return self.all_objects[path][interface][property]
 
-    def interface2paths(self,interface):
+    def interface2paths(self, interface):
         """Return the set of all paths that have the given interface
         """
         self._validate()
@@ -52,4 +53,3 @@ class Cache:
             if interface in interfaces:
                 result.add(path)
         return result
-
